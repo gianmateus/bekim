@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant auswählen - Management System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .selection-container {
+            max-width: 1200px;
+            width: 100%;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .logo-section {
+            margin-bottom: 60px;
+        }
+
+        .logo-section h1 {
+            color: white;
+            font-size: 3.5rem;
+            font-weight: 300;
+            margin: 0 0 20px 0;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .logo-section p {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.4rem;
+            margin: 0;
+            font-weight: 300;
+        }
+
+        .restaurant-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-top: 60px;
+        }
+
+        .restaurant-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .restaurant-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+        }
+
+        .restaurant-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: var(--accent-color);
+        }
+
+        .restaurant-card.cantinetta::before {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+        }
+
+        .restaurant-card.pasta-room::before {
+            background: linear-gradient(90deg, #27ae60, #229954);
+        }
+
+        .restaurant-card.panuozzo::before {
+            background: linear-gradient(90deg, #f39c12, #e67e22);
+        }
+
+        .restaurant-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .restaurant-name {
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 0 0 15px 0;
+        }
+
+        .restaurant-description {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin: 0 0 25px 0;
+        }
+
+        .restaurant-features {
+            text-align: left;
+            margin: 25px 0;
+        }
+
+        .restaurant-features h4 {
+            color: #34495e;
+            font-size: 1rem;
+            margin: 0 0 10px 0;
+            font-weight: 600;
+        }
+
+        .restaurant-features ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .restaurant-features li {
+            color: #7f8c8d;
+            font-size: 0.95rem;
+            margin: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .restaurant-features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .select-button {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .cantinetta .select-button {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        }
+
+        .pasta-room .select-button {
+            background: linear-gradient(45deg, #27ae60, #229954);
+        }
+
+        .panuozzo .select-button {
+            background: linear-gradient(45deg, #f39c12, #e67e22);
+        }
+
+        .select-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .footer-info {
+            margin-top: 60px;
+            color: rgba(255,255,255,0.8);
+            font-size: 1rem;
+        }
+
+        .footer-info a {
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+        }
+
+        @media (max-width: 768px) {
+            .logo-section h1 {
+                font-size: 2.5rem;
+            }
+            
+            .logo-section p {
+                font-size: 1.2rem;
+            }
+            
+            .restaurant-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            
+            .restaurant-card {
+                padding: 30px 20px;
+            }
+            
+            .restaurant-name {
+                font-size: 1.8rem;
+            }
+        }
+
+        /* Animações de entrada */
+        .restaurant-card {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .restaurant-card:nth-child(1) { animation-delay: 0.1s; }
+        .restaurant-card:nth-child(2) { animation-delay: 0.2s; }
+        .restaurant-card:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification-success { background: #27ae60; }
+        .notification-error { background: #e74c3c; }
+        .notification-info { background: #3498db; }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="selection-container">
+        <div class="logo-section">
+            <h1>🍽️ Restaurant Management</h1>
+            <p>Wählen Sie Ihr Restaurant aus</p>
+        </div>
+
+        <div class="restaurant-grid">
+            <!-- Cantinetta -->
+            <div class="restaurant-card cantinetta">
+                <span class="restaurant-icon">🍷</span>
+                <h2 class="restaurant-name">Cantinetta</h2>
+                <p class="restaurant-description">Authentische italienische Küche mit exquisiten Weinen und traditionellen Rezepten.</p>
+                
+                <div class="restaurant-features">
+                    <h4>Spezialisierung:</h4>
+                    <ul>
+                        <li>Italienische Küche</li>
+                        <li>Weinbar & Verkostung</li>
+                        <li>Traditionelle Rezepte</li>
+                        <li>Gehobene Gastronomie</li>
+                    </ul>
+                </div>
+                
+                <button class="select-button" onclick="selectAndNavigate('Cantinetta')">
+                    Cantinetta auswählen
+                </button>
+            </div>
+
+            <!-- The Pasta Room -->
+            <div class="restaurant-card pasta-room">
+                <span class="restaurant-icon">🍝</span>
+                <h2 class="restaurant-name">The Pasta Room</h2>
+                <p class="restaurant-description">Spezialist für hausgemachte Pasta und moderne italienische Küche in entspannter Atmosphäre.</p>
+                
+                <div class="restaurant-features">
+                    <h4>Spezialisierung:</h4>
+                    <ul>
+                        <li>Hausgemachte Pasta</li>
+                        <li>Moderne italienische Küche</li>
+                        <li>Casual Dining</li>
+                        <li>Vegetarische Optionen</li>
+                    </ul>
+                </div>
+                
+                <button class="select-button" onclick="selectAndNavigate('ThePastaRoom')">
+                    The Pasta Room auswählen
+                </button>
+            </div>
+
+            <!-- Panuozzo -->
+            <div class="restaurant-card panuozzo">
+                <span class="restaurant-icon">🥖</span>
+                <h2 class="restaurant-name">Panuozzo</h2>
+                <p class="restaurant-description">Authentische neapolitanische Sandwiches und Street Food in gemütlicher Umgebung.</p>
+                
+                <div class="restaurant-features">
+                    <h4>Spezialisierung:</h4>
+                    <ul>
+                        <li>Neapolitanische Panuozzi</li>
+                        <li>Street Food & Snacks</li>
+                        <li>Schneller Service</li>
+                        <li>Take-away freundlich</li>
+                    </ul>
+                </div>
+                
+                <button class="select-button" onclick="selectAndNavigate('Panuozzo')">
+                    Panuozzo auswählen
+                </button>
+            </div>
+        </div>
+
+        <div class="footer-info">
+            <p>💡 Tipp: Sie können das Restaurant jederzeit über das Menü wechseln</p>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                <button onclick="clearDataAndRetry()" style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+                    🔄 Daten zurücksetzen
+                </button>
+                <button onclick="debugRestaurantState()" style="background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+                    🔍 Status anzeigen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/eventBus.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        // Funções auxiliares (RESTAURANT_KEY já está definido em main.js)
+        function getRestaurantDisplayName(restaurantId) {
+            const names = {
+                'Cantinetta': 'Cantinetta',
+                'ThePastaRoom': 'The Pasta Room',
+                'Panuozzo': 'Panuozzo'
+            };
+            return names[restaurantId] || restaurantId;
+        }
+        
+        function showSuccessMessage(message) {
+            showNotification(message, 'success');
+        }
+        
+        function showErrorMessage(message) {
+            showNotification(message, 'error');
+        }
+        
+        // Função principal de seleção e navegação
+        function selectAndNavigate(restaurantId) {
+            console.log('🎯 selectAndNavigate chamada para:', restaurantId);
+            console.log('🔍 Estado ANTES da seleção:');
+            console.log('   - currentRestaurant:', currentRestaurant);
+            console.log('   - localStorage RESTAURANT_KEY:', localStorage.getItem(RESTAURANT_KEY));
+            console.log('   - appData keys:', Object.keys(appData || {}));
+            
+            forceSelectRestaurant(restaurantId);
+        }
+
+        // Função para forçar seleção de restaurante e navegar
+        function forceSelectRestaurant(restaurantId) {
+            console.log('🔧 forceSelectRestaurant executando para:', restaurantId);
+            
+            try {
+                // Usar a função global do main.js
+                const success = selectRestaurant(restaurantId);
+                
+                if (success) {
+                    // Mostrar mensagem de sucesso
+                    const displayName = getRestaurantDisplayName(restaurantId);
+                    showSuccessMessage(`${displayName} ausgewählt! Weiterleitung zum Dashboard...`);
+                    
+                    // Navegar para dashboard após pequeno delay
+                    setTimeout(() => {
+                                        console.log('🔄 Navegando para dashboard.html...');
+                window.location.href = 'pages/dashboard.html';
+                    }, 1500);
+                } else {
+                    console.error('❌ Falha na seleção do restaurante');
+                    showErrorMessage('Fehler beim Auswählen des Restaurants');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro em forceSelectRestaurant:', error);
+                showErrorMessage('Fehler beim Auswählen des Restaurants');
+            }
+        }
+        
+        // Inicializar página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Força carregar dados primeiro
+            loadDataFromStorage();
+            
+            // Debug: verificar se dados foram carregados
+            console.log('appData:', appData);
+            console.log('currentRestaurant:', currentRestaurant);
+            
+            // CORRIGIDO: Não redirecionar automaticamente - deixar usuário escolher
+            if (isRestaurantSelected()) {
+                console.log(`Restaurant bereits ausgewählt: ${getCurrentRestaurantName()}`);
+                // Não redireciona automaticamente - usuário pode querer trocar
+            }
+        });
+
+        // Funções auxiliares de debug
+        function clearDataAndRetry() {
+            console.log('🧹 Limpando todos os dados...');
+            localStorage.clear();
+            location.reload();
+        }
+        
+        function debugRestaurantState() {
+            console.log('🔍 DEBUG - Estado atual:');
+            console.log('currentRestaurant:', currentRestaurant);
+            console.log('localStorage:', localStorage.getItem(RESTAURANT_KEY));
+            console.log('appData keys:', Object.keys(appData || {}));
+            console.log('isRestaurantSelected():', isRestaurantSelected());
+            
+            alert(`Estado atual:
+• currentRestaurant: ${currentRestaurant}
+• localStorage: ${localStorage.getItem(RESTAURANT_KEY)}
+• appData: ${Object.keys(appData || {}).join(', ')}
+• isRestaurantSelected: ${isRestaurantSelected()}`);
+        }
+
+        /**
+         * Inicializa dados padrão se não existirem
+         */
+        function initializeRestaurantData() {
+            if (!appData || Object.keys(appData).length === 0) {
+                // Use the existing initializeDefaultData function from main.js
+                initializeDefaultData();
+                console.log('Standard-Daten initialisiert');
+            }
+        }
+
+        /**
+         * Limpa todos os dados e reinicia o sistema
+         */
+        function clearDataAndRetry() {
+            console.log('Alle Daten werden gelöscht...');
+            
+            // Limpar localStorage
+            localStorage.removeItem('restaurant_data');
+            localStorage.removeItem('selected_restaurant');
+            localStorage.clear();
+            
+            showNotification('Alle Daten wurden gelöscht. Neustart...', 'info');
+            
+            // Aguardar um pouco e recarregar página
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        }
+
+        /**
+         * Versão mais robusta da seleção de restaurante
+         */
+        function forceSelectRestaurant(restaurantId) {
+            console.log('🚀 ForceSelectRestaurant iniciado para:', restaurantId);
+            
+            try {
+                // CORRIGIDO: Força o carregamento dos dados primeiro
+                loadDataFromStorage();
+                console.log('   - Dados carregados, appData:', Object.keys(appData));
+                
+                // CORRIGIDO: Inicializa todos os restaurantes se não existirem
+                if (!appData[restaurantId]) {
+                    console.log('   - Restaurant nicht gefunden, initialisiere Standard-Daten...');
+                    initializeRestaurantData();
+                }
+                
+                // CORRIGIDO: Verifica novamente se o restaurante existe após inicialização
+                if (!appData[restaurantId]) {
+                    throw new Error(`Restaurant ${restaurantId} wurde nach der Initialisierung nicht gefunden`);
+                }
+                
+                // IMPORTANTE: Define o restaurante atual ANTES de qualquer operação
+                currentRestaurant = restaurantId;
+                console.log('   - currentRestaurant definido como:', currentRestaurant);
+                
+                // IMPORTANTE: Salva no localStorage imediatamente 
+                localStorage.setItem(RESTAURANT_KEY, restaurantId);
+                console.log('   - Salvo no localStorage com chave:', RESTAURANT_KEY, '=', restaurantId);
+                
+                // Verifica se foi salvo corretamente
+                const saved = localStorage.getItem(RESTAURANT_KEY);
+                console.log('   - Verificação localStorage:', saved);
+                
+                if (saved !== restaurantId) {
+                    throw new Error(`Fehler beim Speichern des Restaurants im localStorage. Erwartet: ${restaurantId}, Aktuell: ${saved}`);
+                }
+                
+                // CORRIGIDO: Salva os dados completos
+                saveDataToStorage();
+                console.log('   - Dados salvos no storage');
+                
+                // Mostra mensagem de sucesso
+                const restaurantName = getRestaurantDisplayName(restaurantId);
+                showSuccessMessage(`✅ ${restaurantName} erfolgreich ausgewählt!`);
+                console.log('   - Mensagem de sucesso exibida');
+                
+                // CORRIGIDO: Aguarda um pouco mais e navega
+                setTimeout(() => {
+                    console.log('   - Navegando para dashboard...');
+                    console.log('   - Estado final currentRestaurant:', currentRestaurant);
+                    console.log('   - Estado final localStorage:', localStorage.getItem(RESTAURANT_KEY));
+                    navigateTo('dashboard');
+                }, 1500);
+                
+                console.log('✅ ForceSelectRestaurant concluído com sucesso');
+                
+            } catch (error) {
+                console.error('❌ Erro em forceSelectRestaurant:', error);
+                showErrorMessage('Fehler bei der Restaurant-Auswahl: ' + error.message);
+            }
+        }
+
+        /**
+         * Função de debug para verificar estado atual
+         */
+        function debugRestaurantState() {
+            loadDataFromStorage(); // Garantir dados atualizados
+            
+            const info = `
+🔍 DEBUG - Estado Atual do Sistema:
+
+📊 Dados Gerais:
+• appData keys: ${Object.keys(appData || {}).join(', ')}
+• currentRestaurant: ${currentRestaurant || 'NENHUM'}
+• localStorage selected_restaurant: ${localStorage.getItem(RESTAURANT_KEY) || 'VAZIO'}
+
+🍷 Cantinetta existe: ${appData?.Cantinetta ? 'SIM' : 'NÃO'}
+🍝 ThePastaRoom existe: ${appData?.ThePastaRoom ? 'SIM' : 'NÃO'}  
+🥖 Panuozzo existe: ${appData?.Panuozzo ? 'SIM' : 'NÃO'}
+
+🎯 Função isRestaurantSelected(): ${isRestaurantSelected() ? 'TRUE' : 'FALSE'}
+📍 getCurrentRestaurantName(): ${getCurrentRestaurantName() || 'VAZIO'}
+            `;
+            
+            alert(info);
+            console.log(info);
+        }
+
+        // Adicionar efeitos visuais aos cartões
+        document.querySelectorAll('.restaurant-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-10px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    </script>
+</body>
+</html> 

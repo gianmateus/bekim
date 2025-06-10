@@ -1,0 +1,170 @@
+{
+  "Cantinetta": {
+    "cashflow": [
+      {
+        "id": "demo1",
+        "betrag": 450.50,
+        "datum": "2024-12-05",
+        "beschreibung": "Tageseinnahmen - Mittag",
+        "kategorie": "verkauf",
+        "rechnung": "R-001",
+        "typ": "einnahme"
+      },
+      {
+        "id": "demo2",
+        "betrag": 680.25,
+        "datum": "2024-12-05",
+        "beschreibung": "Tageseinnahmen - Abend",
+        "kategorie": "verkauf", 
+        "rechnung": "R-002",
+        "typ": "einnahme"
+      },
+      {
+        "id": "demo3",
+        "betrag": 245.80,
+        "datum": "2024-12-04",
+        "beschreibung": "Lebensmitteleinkauf",
+        "kategorie": "einkauf",
+        "rechnung": "E-001",
+        "typ": "ausgabe"
+      }
+    ],
+    "events": [],
+    "inventory": [
+      {
+        "id": "inv_001",
+        "produkt": "Chianti Classico",
+        "einheit": "Flasche",
+        "wöchentlicherBedarf": 20,
+        "aktuellerBestand": 8
+      },
+      {
+        "id": "inv_002",
+        "produkt": "Parmigiano Reggiano",
+        "einheit": "kg",
+        "wöchentlicherBedarf": 3,
+        "aktuellerBestand": 1.5
+      },
+      {
+        "id": "inv_003",
+        "produkt": "Bresaola",
+        "einheit": "kg",
+        "wöchentlicherBedarf": 2,
+        "aktuellerBestand": 0.5
+      }
+    ],
+    "shopping": [],
+    "employees": [],
+    "preparations": [],
+    "settings": {
+      "restaurantName": "Cantinetta",
+      "currency": "€"
+    }
+  },
+  "ThePastaRoom": {
+    "cashflow": [
+      {
+        "id": "pasta1",
+        "betrag": 320.75,
+        "datum": "2024-12-05",
+        "beschreibung": "Mittagsservice",
+        "kategorie": "verkauf",
+        "rechnung": "PR-001",
+        "typ": "einnahme"
+      },
+      {
+        "id": "pasta2",
+        "betrag": 150.00,
+        "datum": "2024-12-04",
+        "beschreibung": "Nudel-Zutaten Einkauf",
+        "kategorie": "einkauf",
+        "rechnung": "PE-001",
+        "typ": "ausgabe"
+      }
+    ],
+    "events": [],
+    "inventory": [
+      {
+        "id": "pasta_inv_001",
+        "produkt": "Spaghetti",
+        "einheit": "kg",
+        "wöchentlicherBedarf": 15,
+        "aktuellerBestand": 20
+      },
+      {
+        "id": "pasta_inv_002",
+        "produkt": "Fettuccine",
+        "einheit": "kg",
+        "wöchentlicherBedarf": 10,
+        "aktuellerBestand": 5
+      },
+      {
+        "id": "pasta_inv_003",
+        "produkt": "Gorgonzola",
+        "einheit": "kg",
+        "wöchentlicherBedarf": 4,
+        "aktuellerBestand": 1
+      }
+    ],
+    "shopping": [],
+    "employees": [],
+    "preparations": [],
+    "settings": {
+      "restaurantName": "The Pasta Room",
+      "currency": "€"
+    }
+  },
+  "Panuozzo": {
+    "cashflow": [
+      {
+        "id": "pan1",
+        "betrag": 180.50,
+        "datum": "2024-12-05",
+        "beschreibung": "Panuozzo Verkäufe",
+        "kategorie": "verkauf",
+        "rechnung": "PN-001",
+        "typ": "einnahme"
+      },
+      {
+        "id": "pan2",
+        "betrag": 85.30,
+        "datum": "2024-12-04",
+        "beschreibung": "Brot und Aufschnitt",
+        "kategorie": "einkauf",
+        "rechnung": "PNE-001",
+        "typ": "ausgabe"
+      }
+    ],
+    "events": [],
+    "inventory": [
+      {
+        "id": "pan_inv_001",
+        "produkt": "Panuozzo Brot",
+        "einheit": "Stück",
+        "wöchentlicherBedarf": 100,
+        "aktuellerBestand": 30
+      },
+      {
+        "id": "pan_inv_002",
+        "produkt": "Mozzarella di Bufala",
+        "einheit": "kg",
+        "wöchentlicherBedarf": 8,
+        "aktuellerBestand": 2
+      },
+      {
+        "id": "pan_inv_003",
+        "produkt": "Prosciutto di Parma",
+        "einheit": "kg",
+        "wöchentlicherBedarf": 5,
+        "aktuellerBestand": 1
+      }
+    ],
+    "shopping": [],
+    "employees": [],
+    "preparations": [],
+    "settings": {
+      "restaurantName": "Panuozzo",
+      "currency": "€"
+    }
+  }
+} 

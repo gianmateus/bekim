@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventar - Restaurant Management</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>📦 Inventar</h1>
+            <p>Lagerbestand und Einkaufslisten verwalten</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Navegação -->
+        <div class="nav-buttons">
+            <button class="nav-button" onclick="navigateTo('dashboard')">
+                <span class="icon icon-home"></span>
+                Dashboard
+            </button>
+            <button class="nav-button btn-warning" onclick="generateShoppingList()">
+                <span class="icon icon-download"></span>
+                Einkaufsliste generieren
+            </button>
+        </div>
+
+        <!-- Estatísticas do inventário -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalItems">0</div>
+                <div class="stat-label">Gesamte Artikel</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="lowStockItems">0</div>
+                <div class="stat-label">Niedrige Bestände</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="outOfStockItems">0</div>
+                <div class="stat-label">Ausverkauft</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalValue">€0,00</div>
+                <div class="stat-label">Gesamtwert</div>
+            </div>
+        </div>
+
+        <!-- Formulário para novo item -->
+        <div class="card">
+            <h2>Neuen Artikel hinzufügen</h2>
+            <form id="inventoryForm">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                    <div class="form-group">
+                        <label for="itemName">Artikelname:</label>
+                        <input type="text" id="itemName" placeholder="z.B. Tomaten, Olivenöl..." required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category">Kategorie:</label>
+                        <select id="itemCategory" required>
+                            <option value="">Bitte auswählen...</option>
+                            <option value="vegetables">Gemüse</option>
+                            <option value="fruits">Obst</option>
+                            <option value="meat">Fleisch</option>
+                            <option value="fish">Fisch</option>
+                            <option value="dairy">Milchprodukte</option>
+                            <option value="grains">Getreide/Reis</option>
+                            <option value="spices">Gewürze</option>
+                            <option value="oils">Öle/Fette</option>
+                            <option value="beverages">Getränke</option>
+                            <option value="frozen">Tiefkühlkost</option>
+                            <option value="cleaning">Reinigung</option>
+                            <option value="other">Sonstiges</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="currentStock">Aktueller Bestand:</label>
+                        <input type="number" id="currentStock" placeholder="0" min="0" step="0.1" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="minStock">Mindestbestand:</label>
+                        <input type="number" id="minStock" placeholder="0" min="0" step="0.1" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="unit">Einheit:</label>
+                        <select id="unit" required>
+                            <option value="">Bitte auswählen...</option>
+                            <option value="kg">Kilogramm (kg)</option>
+                            <option value="g">Gramm (g)</option>
+                            <option value="l">Liter (l)</option>
+                            <option value="ml">Milliliter (ml)</option>
+                            <option value="pcs">Stück</option>
+                            <option value="pkg">Packung</option>
+                            <option value="bottles">Flaschen</option>
+                            <option value="cans">Dosen</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="unitPrice">Preis pro Einheit (€):</label>
+                        <input type="number" id="unitPrice" placeholder="0,00" min="0" step="0.01">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success">
+                    <span class="icon icon-add"></span>
+                    Artikel hinzufügen
+                </button>
+            </form>
+        </div>
+
+        <!-- Lista de inventário -->
+        <div class="card">
+            <h2>Lagerbestand</h2>
+            
+            <!-- Filtros -->
+            <div style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+                <select id="filterCategory" style="padding: 10px; border-radius: 5px; border: 1px solid #bdc3c7;">
+                    <option value="">Alle Kategorien</option>
+                    <option value="vegetables">Gemüse</option>
+                    <option value="fruits">Obst</option>
+                    <option value="meat">Fleisch</option>
+                    <option value="fish">Fisch</option>
+                    <option value="dairy">Milchprodukte</option>
+                    <option value="grains">Getreide/Reis</option>
+                    <option value="spices">Gewürze</option>
+                    <option value="oils">Öle/Fette</option>
+                    <option value="beverages">Getränke</option>
+                    <option value="frozen">Tiefkühlkost</option>
+                    <option value="cleaning">Reinigung</option>
+                    <option value="other">Sonstiges</option>
+                </select>
+                
+                <select id="filterStock" style="padding: 10px; border-radius: 5px; border: 1px solid #bdc3c7;">
+                    <option value="">Alle Bestände</option>
+                    <option value="low">Niedriger Bestand</option>
+                    <option value="out">Ausverkauft</option>
+                    <option value="ok">Ausreichend</option>
+                </select>
+                
+                <button onclick="clearInventoryFilters()" class="btn" style="margin: 0;">
+                    Filter löschen
+                </button>
+            </div>
+            
+            <div id="inventoryList">
+                <p style="text-align: center; color: #7f8c8d; font-style: italic;">
+                    Keine Artikel im Inventar
+                </p>
+            </div>
+        </div>
+
+        <!-- Modal para editar item -->
+        <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px;">
+                <h3>Artikel bearbeiten</h3>
+                <form id="editForm">
+                    <input type="hidden" id="editItemId">
+                    <div class="form-group">
+                        <label for="editCurrentStock">Aktueller Bestand:</label>
+                        <input type="number" id="editCurrentStock" min="0" step="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editMinStock">Mindestbestand:</label>
+                        <input type="number" id="editMinStock" min="0" step="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editUnitPrice">Preis pro Einheit (€):</label>
+                        <input type="number" id="editUnitPrice" min="0" step="0.01">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="submit" class="btn btn-success">Speichern</button>
+                        <button type="button" class="btn" onclick="closeEditModal()">Abbrechen</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/main.js"></script>
+    <script>
+        // Inicializar página
+        document.addEventListener('DOMContentLoaded', function() {
+            // CORRIGIDO: Carregar dados ANTES de verificar seleção
+            loadDataFromStorage();
+            
+            checkRestaurantSelection();
+            if (!isRestaurantSelected()) {
+                return;
+            }
+            // updateRestaurantName() removido - esta página não tem elemento #restaurantName
+            initInventoryPage();
+            updateInventoryStats();
+            displayInventory();
+        });
+
+        /**
+         * Inicializa a página de inventário
+         */
+        function initInventoryPage() {
+            // Event listener para formulário
+            document.getElementById('inventoryForm').addEventListener('submit', handleInventoryFormSubmit);
+            document.getElementById('editForm').addEventListener('submit', handleEditFormSubmit);
+            
+            // Event listeners para filtros
+            document.getElementById('filterCategory').addEventListener('change', displayInventory);
+            document.getElementById('filterStock').addEventListener('change', displayInventory);
+        }
+
+        /**
+         * Manipula submissão do formulário de inventário
+         */
+        function handleInventoryFormSubmit(e) {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('itemName').value,
+                category: document.getElementById('itemCategory').value,
+                currentStock: parseFloat(document.getElementById('currentStock').value),
+                minStock: parseFloat(document.getElementById('minStock').value),
+                unit: document.getElementById('unit').value,
+                unitPrice: parseFloat(document.getElementById('unitPrice').value) || 0
+            };
+
+            // Verificar se já existe item com mesmo nome
+            const existingItem = appData.inventory.find(item => 
+                item.name.toLowerCase() === formData.name.toLowerCase()
+            );
+            
+            if (existingItem) {
+                showNotification('Ein Artikel mit diesem Namen existiert bereits', 'error');
+                return;
+            }
+
+            // Adicionar item
+            addInventoryItem(formData);
+            
+            // Reset formulário
+            document.getElementById('inventoryForm').reset();
+            
+            // Atualizar displays
+            updateInventoryStats();
+            displayInventory();
+            
+            showNotification('Artikel erfolgreich hinzugefügt', 'success');
+        }
+
+        /**
+         * Atualiza estatísticas do inventário
+         */
+        function updateInventoryStats() {
+            const totalItems = appData.inventory.length;
+            const lowStockItems = appData.inventory.filter(item => 
+                item.currentStock > 0 && item.currentStock <= item.minStock
+            ).length;
+            const outOfStockItems = appData.inventory.filter(item => 
+                item.currentStock <= 0
+            ).length;
+            const totalValue = appData.inventory.reduce((sum, item) => 
+                sum + (item.currentStock * item.unitPrice), 0
+            );
+
+            document.getElementById('totalItems').textContent = totalItems;
+            document.getElementById('lowStockItems').textContent = lowStockItems;
+            document.getElementById('outOfStockItems').textContent = outOfStockItems;
+            document.getElementById('totalValue').textContent = formatCurrency(totalValue);
+        }
+
+        /**
+         * Exibe lista de inventário
+         */
+        function displayInventory() {
+            const container = document.getElementById('inventoryList');
+            let inventory = [...appData.inventory];
+            
+            // Aplicar filtros
+            const filterCategory = document.getElementById('filterCategory').value;
+            const filterStock = document.getElementById('filterStock').value;
+            
+            if (filterCategory) {
+                inventory = inventory.filter(item => item.category === filterCategory);
+            }
+            
+            if (filterStock) {
+                if (filterStock === 'low') {
+                    inventory = inventory.filter(item => item.currentStock > 0 && item.currentStock <= item.minStock);
+                } else if (filterStock === 'out') {
+                    inventory = inventory.filter(item => item.currentStock <= 0);
+                } else if (filterStock === 'ok') {
+                    inventory = inventory.filter(item => item.currentStock > item.minStock);
+                }
+            }
+            
+            // Ordenar por nome
+            inventory.sort((a, b) => a.name.localeCompare(b.name));
+            
+            if (inventory.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #7f8c8d; font-style: italic;">Keine Artikel gefunden</p>';
+                return;
+            }
+
+            const categoryLabels = {
+                'vegetables': 'Gemüse',
+                'fruits': 'Obst',
+                'meat': 'Fleisch',
+                'fish': 'Fisch',
+                'dairy': 'Milchprodukte',
+                'grains': 'Getreide/Reis',
+                'spices': 'Gewürze',
+                'oils': 'Öle/Fette',
+                'beverages': 'Getränke',
+                'frozen': 'Tiefkühlkost',
+                'cleaning': 'Reinigung',
+                'other': 'Sonstiges'
+            };
+
+            container.innerHTML = inventory
+                .map(item => {
+                    const stockStatus = getStockStatus(item);
+                    const stockColor = stockStatus.color;
+                    const stockText = stockStatus.text;
+                    
+                    return `
+                        <div class="item" style="border-left-color: ${stockColor};">
+                            <div class="item-info">
+                                <h4>${item.name}</h4>
+                                <p>${categoryLabels[item.category] || item.category}</p>
+                                <p><strong>Bestand:</strong> ${item.currentStock} ${item.unit} | <strong>Minimum:</strong> ${item.minStock} ${item.unit}</p>
+                                <p><strong>Status:</strong> <span style="color: ${stockColor}; font-weight: bold;">${stockText}</span></p>
+                                ${item.unitPrice > 0 ? `<p><strong>Wert:</strong> ${formatCurrency(item.currentStock * item.unitPrice)}</p>` : ''}
+                            </div>
+                            <div class="item-actions">
+                                <button class="btn" onclick="editItem('${item.id}')">
+                                    <span class="icon icon-edit"></span>
+                                    Bearbeiten
+                                </button>
+                                <button class="btn btn-danger" onclick="deleteItem('${item.id}')">
+                                    <span class="icon icon-delete"></span>
+                                    Löschen
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                })
+                .join('');
+        }
+
+        /**
+         * Determina status do estoque
+         */
+        function getStockStatus(item) {
+            if (item.currentStock <= 0) {
+                return { color: '#e74c3c', text: 'Ausverkauft' };
+            } else if (item.currentStock <= item.minStock) {
+                return { color: '#f39c12', text: 'Niedrig' };
+            } else {
+                return { color: '#27ae60', text: 'Ausreichend' };
+            }
+        }
+
+        /**
+         * Editar item
+         */
+        function editItem(id) {
+            const item = appData.inventory.find(i => i.id === id);
+            if (!item) return;
+            
+            document.getElementById('editItemId').value = id;
+            document.getElementById('editCurrentStock').value = item.currentStock;
+            document.getElementById('editMinStock').value = item.minStock;
+            document.getElementById('editUnitPrice').value = item.unitPrice;
+            
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        /**
+         * Fechar modal de edição
+         */
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        /**
+         * Manipula formulário de edição
+         */
+        function handleEditFormSubmit(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('editItemId').value;
+            const updates = {
+                currentStock: parseFloat(document.getElementById('editCurrentStock').value),
+                minStock: parseFloat(document.getElementById('editMinStock').value),
+                unitPrice: parseFloat(document.getElementById('editUnitPrice').value) || 0
+            };
+            
+            updateInventoryItem(id, updates);
+            closeEditModal();
+            updateInventoryStats();
+            displayInventory();
+            
+            showNotification('Artikel erfolgreich aktualisiert', 'success');
+        }
+
+        /**
+         * Deletar item
+         */
+        function deleteItem(id) {
+            const item = appData.inventory.find(i => i.id === id);
+            if (!item) return;
+            
+            if (confirm(`Sind Sie sicher, dass Sie "${item.name}" löschen möchten?`)) {
+                removeInventoryItem(id);
+                updateInventoryStats();
+                displayInventory();
+                showNotification('Artikel erfolgreich gelöscht', 'success');
+            }
+        }
+
+        /**
+         * Limpar filtros
+         */
+        function clearInventoryFilters() {
+            document.getElementById('filterCategory').value = '';
+            document.getElementById('filterStock').value = '';
+            displayInventory();
+        }
+
+        /**
+         * Gerar lista de compras
+         */
+        function generateShoppingList() {
+            const itemsToRestock = appData.inventory.filter(item => 
+                item.currentStock <= item.minStock
+            );
+            
+            if (itemsToRestock.length === 0) {
+                showNotification('Alle Artikel sind ausreichend vorrätig', 'info');
+                return;
+            }
+
+            const categoryLabels = {
+                'vegetables': 'Gemüse',
+                'fruits': 'Obst',
+                'meat': 'Fleisch',
+                'fish': 'Fisch',
+                'dairy': 'Milchprodukte',
+                'grains': 'Getreide/Reis',
+                'spices': 'Gewürze',
+                'oils': 'Öle/Fette',
+                'beverages': 'Getränke',
+                'frozen': 'Tiefkühlkost',
+                'cleaning': 'Reinigung',
+                'other': 'Sonstiges'
+            };
+
+            // Agrupar por categoria
+            const groupedItems = itemsToRestock.reduce((groups, item) => {
+                const category = categoryLabels[item.category] || item.category;
+                if (!groups[category]) {
+                    groups[category] = [];
+                }
+                groups[category].push(item);
+                return groups;
+            }, {});
+
+            // Gerar conteúdo da lista
+            let listContent = `EINKAUFSLISTE\n`;
+            listContent += `Generiert am: ${new Date().toLocaleDateString('de-DE')}\n`;
+            listContent += `Restaurant: ${appData.settings.restaurantName}\n\n`;
+            listContent += `===========================================\n\n`;
+
+            Object.keys(groupedItems).sort().forEach(category => {
+                listContent += `${category.toUpperCase()}\n`;
+                listContent += `-------------------------------------------\n`;
+                
+                groupedItems[category].forEach(item => {
+                    const needed = Math.max(item.minStock * 2 - item.currentStock, item.minStock);
+                    listContent += `□ ${item.name} - ${needed.toFixed(1)} ${item.unit}\n`;
+                    if (item.unitPrice > 0) {
+                        listContent += `  (ca. ${formatCurrency(needed * item.unitPrice)})\n`;
+                    }
+                });
+                listContent += `\n`;
+            });
+
+            // Calcular total estimado
+            const totalEstimated = itemsToRestock.reduce((sum, item) => {
+                const needed = Math.max(item.minStock * 2 - item.currentStock, item.minStock);
+                return sum + (needed * item.unitPrice);
+            }, 0);
+
+            if (totalEstimated > 0) {
+                listContent += `Geschätzter Gesamtbetrag: ${formatCurrency(totalEstimated)}\n`;
+            }
+
+            // Download da lista
+            const blob = new Blob([listContent], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Einkaufsliste_${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showNotification('Einkaufsliste erfolgreich generiert', 'success');
+        }
+    </script>
+</body>
+</html> 

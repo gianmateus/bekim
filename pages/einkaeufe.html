@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einkaufsliste - Restaurant Management</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <!-- Dependências removidas para funcionamento offline -->
+    <style>
+        .shopping-header {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            color: white;
+            padding: 30px 0;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.3);
+        }
+
+        .shopping-header h1 {
+            font-size: 2.5em;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .shopping-header .restaurant-name {
+            font-size: 1.3em;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            border-left: 5px solid #4a90e2;
+        }
+
+        .stat-card.offen { border-left-color: #9e9e9e; }
+        .stat-card.gekauft { border-left-color: #4caf50; }
+        .stat-card.nicht_verfügbar { border-left-color: #f44336; }
+        .stat-card.später_kaufen { border-left-color: #ff9800; }
+
+        .stat-card .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-card.offen .stat-number { color: #9e9e9e; }
+        .stat-card.gekauft .stat-number { color: #4caf50; }
+        .stat-card.nicht_verfügbar .stat-number { color: #f44336; }
+        .stat-card.später_kaufen .stat-number { color: #ff9800; }
+
+        .controls-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: center;
+        }
+
+        .search-container {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            box-sizing: border-box;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 25px;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .shopping-list {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .shopping-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: 20px;
+            padding: 25px;
+            border-bottom: 1px solid #eee;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .shopping-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .shopping-item:last-child {
+            border-bottom: none;
+        }
+
+        .priority-indicator {
+            width: 20px;
+            height: 60px;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .priority-indicator.hoch {
+            background: linear-gradient(to bottom, #f44336, #e53935);
+        }
+
+        .priority-indicator.mittel {
+            background: linear-gradient(to bottom, #ff9800, #fb8c00);
+        }
+
+        .priority-indicator.niedrig {
+            background: linear-gradient(to bottom, #4caf50, #43a047);
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .item-quantity {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .item-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-offen {
+            background: #e0e0e0;
+            color: #424242;
+        }
+
+        .status-gekauft {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .status-nicht_verfügbar {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+
+        .status-später_kaufen {
+            background: #ffe0b2;
+            color: #ef6c00;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 10px 15px;
+            font-size: 14px;
+            min-width: auto;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 30px;
+            color: #666;
+        }
+
+        .empty-state i {
+            font-size: 4em;
+            margin-bottom: 20px;
+            color: #ddd;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            padding: 10px 20px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .filter-tab.active {
+            background: #4a90e2;
+            color: white;
+            border-color: #4a90e2;
+        }
+
+        .sort-options {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .shopping-item {
+                grid-template-columns: auto 1fr;
+                gap: 15px;
+            }
+
+            .item-actions {
+                grid-column: 1 / -1;
+                justify-content: center;
+                margin-top: 15px;
+            }
+
+            .controls-section {
+                flex-direction: column;
+            }
+
+            .action-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .shopping-header h1 {
+                font-size: 2em;
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification-success {
+            background: #4caf50;
+        }
+
+        .notification-error {
+            background: #f44336;
+        }
+
+        .notification-info {
+            background: #2196f3;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="shopping-header">
+            <h1><i class="fas fa-shopping-cart"></i> Einkaufsliste</h1>
+            <div class="restaurant-name" id="restaurantName">für Restaurant</div>
+        </div>
+
+        <!-- Estatísticas -->
+        <div class="stats-container" id="statsContainer">
+            <!-- Stats will be dynamically populated -->
+        </div>
+
+        <!-- Controles -->
+        <div class="controls-section">
+            <div class="search-container">
+                <input type="text" class="search-input" id="searchInput" placeholder="🔍 Produkt suchen...">
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="generateNewShoppingList()">
+                    <i class="fas fa-sync"></i> Neue Liste generieren
+                </button>
+                <button class="btn btn-success" onclick="markAllItemsAsBought()">
+                    <i class="fas fa-check-double"></i> Alles als gekauft
+                </button>
+                <button class="btn btn-warning" onclick="exportToPDF()">
+                    <i class="fas fa-file-pdf"></i> PDF exportieren
+                </button>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filter-tabs">
+            <div class="filter-tab active" data-filter="all">Alle Artikel</div>
+            <div class="filter-tab" data-filter="offen">Offen</div>
+            <div class="filter-tab" data-filter="gekauft">Gekauft</div>
+            <div class="filter-tab" data-filter="nicht_verfügbar">Nicht verfügbar</div>
+            <div class="filter-tab" data-filter="später_kaufen">Später kaufen</div>
+            
+            <div class="sort-options">
+                <label>Sortieren:</label>
+                <select id="sortSelect" class="search-input" style="width: auto; padding: 8px;">
+                    <option value="name">Nach Name</option>
+                    <option value="priority">Nach Priorität</option>
+                    <option value="status">Nach Status</option>
+                    <option value="quantity">Nach Menge</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Lista de Compras -->
+        <div class="shopping-list" id="shoppingList">
+            <!-- Items will be dynamically populated -->
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation-buttons">
+            <button class="nav-btn" onclick="navigateTo('dashboard')">
+                <i class="fas fa-tachometer-alt"></i>
+                Dashboard
+            </button>
+            <button class="nav-btn" onclick="navigateTo('inventar')">
+                <i class="fas fa-boxes"></i>
+                Inventar
+            </button>
+            <button class="nav-btn" onclick="navigateTo('konten')">
+                <i class="fas fa-euro-sign"></i>
+                Finanzen
+            </button>
+            <button class="nav-btn" onclick="navigateTo('settings')">
+                <i class="fas fa-cog"></i>
+                Einstellungen
+            </button>
+        </div>
+    </div>
+
+    <script src="../js/eventBus.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="../js/restaurant-header.js"></script>
+    <script>
+        let currentFilter = 'all';
+        let currentSort = 'name';
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            // CORRIGIDO: Carregar dados ANTES de verificar seleção
+            loadDataFromStorage();
+            
+            checkRestaurantSelection();
+            if (isRestaurantSelected()) {
+                updateRestaurantName();
+                loadShoppingList();
+                updateStats();
+                setupEventListeners();
+            }
+        });
+
+        function setupEventListeners() {
+            // Search input
+            document.getElementById('searchInput').addEventListener('input', function() {
+                filterAndDisplayItems();
+            });
+
+            // Filter tabs
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Update active tab
+                    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    currentFilter = this.dataset.filter;
+                    filterAndDisplayItems();
+                });
+            });
+
+            // Sort select
+            document.getElementById('sortSelect').addEventListener('change', function() {
+                currentSort = this.value;
+                filterAndDisplayItems();
+            });
+        }
+
+        function updateRestaurantName() {
+            const restaurantName = getCurrentRestaurantName();
+            document.getElementById('restaurantName').textContent = `für ${restaurantName}`;
+        }
+
+        function updateStats() {
+            const stats = getShoppingStats();
+            const container = document.getElementById('statsContainer');
+            
+            container.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${stats.total}</div>
+                    <div>Gesamt Artikel</div>
+                </div>
+                <div class="stat-card offen">
+                    <div class="stat-number">${stats.offen}</div>
+                    <div>Offen</div>
+                </div>
+                <div class="stat-card gekauft">
+                    <div class="stat-number">${stats.gekauft}</div>
+                    <div>Gekauft</div>
+                </div>
+                <div class="stat-card nicht_verfügbar">
+                    <div class="stat-number">${stats.nicht_verfügbar}</div>
+                    <div>Nicht verfügbar</div>
+                </div>
+                <div class="stat-card später_kaufen">
+                    <div class="stat-number">${stats.später_kaufen}</div>
+                    <div>Später kaufen</div>
+                </div>
+            `;
+        }
+
+        function loadShoppingList() {
+            filterAndDisplayItems();
+        }
+
+        function filterAndDisplayItems() {
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData) return;
+
+            let items = [...restaurantData.shopping];
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            // Aplicar filtro de status
+            if (currentFilter !== 'all') {
+                items = items.filter(item => item.status === currentFilter);
+            }
+
+            // Aplicar filtro de busca
+            if (searchTerm) {
+                items = items.filter(item => 
+                    item.produkt.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // Aplicar ordenação
+            items.sort((a, b) => {
+                switch (currentSort) {
+                    case 'name':
+                        return a.produkt.localeCompare(b.produkt);
+                    case 'priority':
+                        const priorityOrder = { 'hoch': 3, 'mittel': 2, 'niedrig': 1 };
+                        return priorityOrder[b.priority] - priorityOrder[a.priority];
+                    case 'status':
+                        return a.status.localeCompare(b.status);
+                    case 'quantity':
+                        return b.menge - a.menge;
+                    default:
+                        return 0;
+                }
+            });
+
+            displayItems(items);
+        }
+
+        function displayItems(items) {
+            const container = document.getElementById('shoppingList');
+            
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-shopping-cart"></i>
+                        <h3>Keine Artikel gefunden</h3>
+                        <p>Es gibt keine Artikel in der Einkaufsliste, die Ihren Kriterien entsprechen.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = items.map(item => `
+                <div class="shopping-item">
+                    <div class="priority-indicator ${item.priority}"></div>
+                    
+                    <div class="item-info">
+                        <div class="item-name">${item.produkt}</div>
+                        <div class="item-quantity">${item.menge} ${item.einheit}</div>
+                        <div class="item-status status-${item.status}">
+                            ${getStatusText(item.status)}
+                        </div>
+                    </div>
+                    
+                    <div class="item-actions">
+                        <button class="btn btn-success btn-small" onclick="updateItemStatus('${item.id}', 'gekauft')" 
+                                ${item.status === 'gekauft' ? 'disabled' : ''}>
+                            <i class="fas fa-check"></i> Gekauft
+                        </button>
+                        <button class="btn btn-danger btn-small" onclick="updateItemStatus('${item.id}', 'nicht_verfügbar')"
+                                ${item.status === 'nicht_verfügbar' ? 'disabled' : ''}>
+                            <i class="fas fa-times"></i> Nicht verfügbar
+                        </button>
+                        <button class="btn btn-warning btn-small" onclick="updateItemStatus('${item.id}', 'später_kaufen')"
+                                ${item.status === 'später_kaufen' ? 'disabled' : ''}>
+                            <i class="fas fa-clock"></i> Später
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getStatusText(status) {
+            const statusTexts = {
+                'offen': 'Offen',
+                'gekauft': 'Gekauft',
+                'nicht_verfügbar': 'Nicht verfügbar',
+                'später_kaufen': 'Später kaufen'
+            };
+            return statusTexts[status] || status;
+        }
+
+        function updateItemStatus(id, status) {
+            if (updateShoppingStatus(id, status)) {
+                showNotification(`Produkt wurde als ${getStatusText(status).toLowerCase()} markiert`, 'success');
+                loadShoppingList();
+                updateStats();
+            } else {
+                showNotification('Fehler beim Aktualisieren des Status', 'error');
+            }
+        }
+
+        function generateNewShoppingList() {
+            if (confirm('Möchten Sie wirklich eine neue Einkaufsliste generieren? Die aktuelle Liste wird überschrieben.')) {
+                if (generateShoppingList()) {
+                    showNotification('Neue Einkaufsliste wurde erfolgreich generiert', 'success');
+                    loadShoppingList();
+                    updateStats();
+                } else {
+                    showNotification('Fehler beim Generieren der Einkaufsliste', 'error');
+                }
+            }
+        }
+
+        function markAllItemsAsBought() {
+            if (confirm('Möchten Sie alle offenen Artikel als gekauft markieren?')) {
+                if (markAllAsBought()) {
+                    showNotification('Alle Artikel wurden als gekauft markiert', 'success');
+                    loadShoppingList();
+                    updateStats();
+                } else {
+                    showNotification('Fehler beim Markieren der Artikel', 'error');
+                }
+            }
+        }
+
+        function exportToPDF() {
+            // PDF export removido para funcionamento offline
+            showNotification('PDF Export nicht verfügbar im Offline-Modus. Verwenden Sie die Druckfunktion des Browsers.', 'info');
+            return;
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,52 @@
+🏪 SISTEMA DE GESTÃO DE RESTAURANTE - OFFLINE
+====================================================
+
+📋 INSTRUÇÕES DE INSTALAÇÃO:
+-----------------------------
+1. Descompacte toda a pasta "offline-restaurant" em seu computador
+2. Vá até a pasta descompactada
+3. Clique 2 vezes no arquivo "index.html"
+4. O sistema abrirá automaticamente no seu navegador padrão
+
+✅ REQUISITOS:
+--------------
+- Qualquer navegador moderno (Chrome, Firefox, Edge, Safari)
+- Nenhuma conexão com internet necessária
+- Nenhuma instalação adicional
+
+🎯 COMO USAR:
+-------------
+1. Na tela inicial, escolha seu restaurante
+2. Navegue pelo dashboard usando os botões coloridos
+3. Todos os dados são salvos localmente no navegador
+4. Para fazer backup, use a função "Exportar dados" nas configurações
+
+🔧 FUNCIONALIDADES:
+-------------------
+✓ Gestão financeira (receitas e despesas)
+✓ Controle de inventário
+✓ Lista de compras automática
+✓ Gestão de funcionários
+✓ Preparações de cozinha
+✓ Calendário de eventos
+✓ Pagamentos recorrentes
+✓ Configurações e backup de dados
+
+📱 COMPATIBILIDADE:
+-------------------
+✓ Funciona em computadores desktop
+✓ Funciona em tablets
+✓ Funciona em smartphones
+✓ Design responsivo para todas as telas
+
+🆘 SUPORTE:
+-----------
+Em caso de dúvidas ou problemas:
+- Feche o navegador e abra novamente o index.html
+- Verifique se todos os arquivos foram descompactados corretamente
+- Use a função "Limpar dados" nas configurações se necessário
+
+📧 Desenvolvido com ❤️ para otimizar a gestão do seu restaurante!
+
+Versão: 1.0 - Sistema 100% Offline
+Data: Dezembro 2024 
