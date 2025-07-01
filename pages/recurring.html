@@ -272,10 +272,13 @@
          * Atualiza estatísticas dos pagamentos recorrentes
          */
         function updateRecurringStats() {
-            const totalRecurring = appData.recurring.length;
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData || !restaurantData.recurring) return;
+            
+            const totalRecurring = restaurantData.recurring.length;
             
             // Calcular custo mensal total
-            const monthlyTotal = appData.recurring.reduce((sum, payment) => {
+            const monthlyTotal = restaurantData.recurring.reduce((sum, payment) => {
                 let monthlyAmount = 0;
                 switch (payment.frequency) {
                     case 'weekly':
@@ -303,7 +306,7 @@
             // Contar pagamentos vencendo esta semana
             const today = new Date();
             const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-            const upcomingDue = appData.recurring.filter(payment => {
+            const upcomingDue = restaurantData.recurring.filter(payment => {
                 const nextDue = new Date(payment.nextDue);
                 return nextDue <= nextWeek;
             }).length;
@@ -319,7 +322,13 @@
          */
         function displayRecurringPayments() {
             const container = document.getElementById('recurringList');
-            let payments = [...appData.recurring];
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData || !restaurantData.recurring) {
+                container.innerHTML = '<p style="text-align: center; color: #7f8c8d; font-style: italic;">Keine Zahlungen gefunden</p>';
+                return;
+            }
+            
+            let payments = [...restaurantData.recurring];
             
             // Aplicar filtros
             const filterFrequency = document.getElementById('filterFrequency').value;
@@ -433,10 +442,16 @@
          */
         function displayUpcomingPayments() {
             const container = document.getElementById('upcomingPayments');
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData || !restaurantData.recurring) {
+                container.innerHTML = '<p style="text-align: center; color: #7f8c8d; font-style: italic;">Keine anstehenden Zahlungen</p>';
+                return;
+            }
+            
             const today = new Date();
             const next30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-            const upcomingPayments = appData.recurring
+            const upcomingPayments = restaurantData.recurring
                 .filter(payment => {
                     const nextDue = new Date(payment.nextDue);
                     return nextDue <= next30Days;
@@ -487,7 +502,10 @@
          * Marca pagamento como pago
          */
         function markAsPaid(id) {
-            const payment = appData.recurring.find(p => p.id === id);
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData || !restaurantData.recurring) return;
+            
+            const payment = restaurantData.recurring.find(p => p.id === id);
             if (!payment) return;
             
             if (confirm(`"${payment.description}" als bezahlt markieren und zum Kassenfluss hinzufügen?`)) {
@@ -516,9 +534,12 @@
          * Atualiza pagamento recorrente
          */
         function updateRecurringPayment(id, updates) {
-            const index = appData.recurring.findIndex(p => p.id === id);
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData || !restaurantData.recurring) return;
+            
+            const index = restaurantData.recurring.findIndex(p => p.id === id);
             if (index !== -1) {
-                appData.recurring[index] = { ...appData.recurring[index], ...updates };
+                restaurantData.recurring[index] = { ...restaurantData.recurring[index], ...updates };
                 saveDataToStorage();
             }
         }
@@ -527,7 +548,10 @@
          * Deleta pagamento recorrente
          */
         function deleteRecurringPayment(id) {
-            const payment = appData.recurring.find(p => p.id === id);
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData || !restaurantData.recurring) return;
+            
+            const payment = restaurantData.recurring.find(p => p.id === id);
             if (!payment) return;
             
             if (confirm(`Sind Sie sicher, dass Sie "${payment.description}" löschen möchten?`)) {

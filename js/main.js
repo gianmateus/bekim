@@ -704,10 +704,10 @@ function addRecurringPayment(payment) {
         if (payment.nextDue) {
             eventBus.emit(EVENTS.CALENDAR_EVENT_ADDED, {
                 datum: formatDate(payment.nextDue),
-                beschreibung: `Zahlung: ${payment.beschreibung}`,
-                betrag: payment.betrag,
+                beschreibung: `Zahlung: ${payment.description}`,
+                betrag: payment.amount,
                 typ: 'recurring',
-                kategorie: payment.kategorie,
+                kategorie: payment.category,
                 source: 'recurring'
             });
         }
@@ -721,8 +721,12 @@ function addRecurringPayment(payment) {
  * @param {string} id - ID do pagamento
  */
 function removeRecurringPayment(id) {
-    appData.recurring = appData.recurring.filter(payment => payment.id !== id);
+    const restaurantData = getCurrentRestaurantData();
+    if (!restaurantData) return false;
+    
+    restaurantData.recurring = restaurantData.recurring.filter(payment => payment.id !== id);
     saveDataToStorage();
+    return true;
 }
 
 /**
@@ -731,30 +735,42 @@ function removeRecurringPayment(id) {
  * @returns {string} - Próxima data de vencimento
  */
 function calculateNextDue(payment) {
-    const today = new Date();
-    let nextDue = new Date(today);
+    let nextDue;
     
-    switch (payment.frequency) {
-        case 'weekly':
-            nextDue.setDate(today.getDate() + 7);
-            break;
-        case 'monthly':
-            nextDue.setMonth(today.getMonth() + 1);
-            break;
-        case 'quarterly':
-            nextDue.setMonth(today.getMonth() + 3);
-            break;
-        case 'yearly':
-            nextDue.setFullYear(today.getFullYear() + 1);
-            break;
-        case 'custom':
-            nextDue = new Date(payment.customDate);
-            break;
-        default:
-            nextDue.setMonth(today.getMonth() + 1);
+    // Se tem customDate, usar isso
+    if (payment.customDate) {
+        nextDue = new Date(payment.customDate);
+    } else if (payment.startDate) {
+        // Se tem startDate, usar isso
+        nextDue = new Date(payment.startDate);
+    } else {
+        // Senão, calcular baseado na frequência
+        const today = new Date();
+        nextDue = new Date(today);
+        
+        switch (payment.frequency) {
+            case 'weekly':
+                nextDue.setDate(today.getDate() + 7);
+                break;
+            case 'monthly':
+                nextDue.setMonth(today.getMonth() + 1);
+                break;
+            case 'quarterly':
+                nextDue.setMonth(today.getMonth() + 3);
+                break;
+            case 'yearly':
+                nextDue.setFullYear(today.getFullYear() + 1);
+                break;
+            default:
+                nextDue.setMonth(today.getMonth() + 1);
+        }
     }
     
-    return nextDue.toISOString();
+    // Retornar apenas a data (sem timezone issues)
+    const year = nextDue.getFullYear();
+    const month = String(nextDue.getMonth() + 1).padStart(2, '0');
+    const day = String(nextDue.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 /**
