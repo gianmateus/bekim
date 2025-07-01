@@ -707,7 +707,12 @@
             const restaurantData = getCurrentRestaurantData();
             if (!restaurantData) return [];
 
-            const dateStr = date.toISOString().split('T')[0];
+            // Fix timezone issue: create date string without timezone conversion
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const dateStr = `${year}-${month}-${day}`;
+            
             const events = [];
 
             // Financial events
@@ -725,7 +730,11 @@
             // Preparation events
             if (currentFilter === 'all' || currentFilter === 'preparations') {
                 const dailyPreparations = (restaurantData.preparations || []).filter(prep => {
-                    const prepDate = new Date(prep.createdAt || new Date()).toISOString().split('T')[0];
+                    const prepDateObj = new Date(prep.createdAt || new Date());
+                    const prepYear = prepDateObj.getFullYear();
+                    const prepMonth = String(prepDateObj.getMonth() + 1).padStart(2, '0');
+                    const prepDay = String(prepDateObj.getDate()).padStart(2, '0');
+                    const prepDate = `${prepYear}-${prepMonth}-${prepDay}`;
                     return prepDate === dateStr;
                 });
                 dailyPreparations.forEach(prep => {
@@ -740,7 +749,11 @@
             // Custom events
             if (currentFilter === 'all' || currentFilter === 'events') {
                 const dailyEvents = (restaurantData.events || []).filter(event => {
-                    const eventDate = new Date(event.date || new Date()).toISOString().split('T')[0];
+                    const eventDateObj = new Date(event.date || new Date());
+                    const eventYear = eventDateObj.getFullYear();
+                    const eventMonth = String(eventDateObj.getMonth() + 1).padStart(2, '0');
+                    const eventDay = String(eventDateObj.getDate()).padStart(2, '0');
+                    const eventDate = `${eventYear}-${eventMonth}-${eventDay}`;
                     return eventDate === dateStr;
                 });
                 dailyEvents.forEach(event => {
@@ -759,7 +772,12 @@
             const restaurantData = getCurrentRestaurantData();
             if (!restaurantData) return { total: 0, income: 0, expenses: 0 };
 
-            const dateStr = date.toISOString().split('T')[0];
+            // Fix timezone issue: create date string without timezone conversion
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const dateStr = `${year}-${month}-${day}`;
+            
             const dailyFinancials = (restaurantData.cashflow || []).filter(entry => entry.datum === dateStr);
 
             const income = dailyFinancials

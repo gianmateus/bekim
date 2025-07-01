@@ -522,7 +522,12 @@ function addCashflowEntry(entry) {
     
     entry.id = generateId();
     if (!entry.datum) {
-        entry.datum = new Date().toISOString().split('T')[0];
+        // Fix timezone issue: create date string without timezone conversion
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        entry.datum = `${year}-${month}-${day}`;
     }
     restaurantData.cashflow.push(entry);
     saveDataToStorage();
@@ -1059,7 +1064,11 @@ function exportData() {
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     
     const now = new Date();
-    const timestamp = now.toISOString().split('T')[0];
+    // Fix timezone issue: create date string without timezone conversion
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const timestamp = `${year}-${month}-${day}`;
     const restaurantName = getCurrentRestaurantName().replace(/\s+/g, '_');
     const fileName = `${restaurantName}_backup_${timestamp}.json`;
     
