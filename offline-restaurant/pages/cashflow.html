@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kassenfluss - Restaurant Management</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>💰 Kassenfluss</h1>
+            <p>Einnahmen und Ausgaben verwalten</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Navegação -->
+        <div class="nav-buttons">
+            <button class="nav-button" onclick="navigateTo('dashboard')">
+                <span class="icon icon-home"></span>
+                Dashboard
+            </button>
+        </div>
+
+        <!-- Resumo financeiro -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalIncome">€0,00</div>
+                <div class="stat-label">Gesamte Einnahmen</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalExpenses">€0,00</div>
+                <div class="stat-label">Gesamte Ausgaben</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="netBalance">€0,00</div>
+                <div class="stat-label">Nettosaldo</div>
+            </div>
+        </div>
+
+        <!-- Formulário para nova entrada -->
+        <div class="card">
+            <h2>Neue Transaktion hinzufügen</h2>
+            <form id="cashflowForm">
+                <div class="form-group">
+                    <label for="transactionType">Transaktionstyp:</label>
+                    <select id="transactionType" required>
+                        <option value="">Bitte auswählen...</option>
+                        <option value="income">Einnahme</option>
+                        <option value="expense">Ausgabe</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Beschreibung:</label>
+                    <input type="text" id="description" placeholder="z.B. Tageseinnahmen, Miete, Einkauf..." required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="amount">Betrag (€):</label>
+                    <input type="number" id="amount" placeholder="0,00" step="0.01" min="0" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="category">Kategorie:</label>
+                    <select id="category" required>
+                        <option value="">Bitte auswählen...</option>
+                        <!-- Einnahme-Kategorien -->
+                        <optgroup label="Einnahmen" id="incomeOptions" style="display: none;">
+                            <option value="sales">Verkäufe</option>
+                            <option value="delivery">Lieferungen</option>
+                            <option value="catering">Catering</option>
+                            <option value="other_income">Sonstige Einnahmen</option>
+                        </optgroup>
+                        <!-- Ausgabe-Kategorien -->
+                        <optgroup label="Ausgaben" id="expenseOptions" style="display: none;">
+                            <option value="food_supplies">Lebensmittel</option>
+                            <option value="rent">Miete</option>
+                            <option value="utilities">Nebenkosten</option>
+                            <option value="staff">Personal</option>
+                            <option value="equipment">Ausrüstung</option>
+                            <option value="marketing">Marketing</option>
+                            <option value="maintenance">Wartung</option>
+                            <option value="other_expense">Sonstige Ausgaben</option>
+                        </optgroup>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="date">Datum:</label>
+                    <input type="date" id="date" required>
+                </div>
+                
+                <button type="submit" class="btn btn-success">
+                    <span class="icon icon-add"></span>
+                    Transaktion hinzufügen
+                </button>
+            </form>
+        </div>
+
+        <!-- Lista de transações -->
+        <div class="card">
+            <h2>Alle Transaktionen</h2>
+            
+            <!-- Filtros -->
+            <div style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+                <select id="filterType" style="padding: 10px; border-radius: 5px; border: 1px solid #bdc3c7;">
+                    <option value="">Alle Typen</option>
+                    <option value="income">Nur Einnahmen</option>
+                    <option value="expense">Nur Ausgaben</option>
+                </select>
+                
+                <select id="filterCategory" style="padding: 10px; border-radius: 5px; border: 1px solid #bdc3c7;">
+                    <option value="">Alle Kategorien</option>
+                </select>
+                
+                <input type="month" id="filterMonth" style="padding: 10px; border-radius: 5px; border: 1px solid #bdc3c7;">
+                
+                <button onclick="clearFilters()" class="btn" style="margin: 0;">
+                    Filter löschen
+                </button>
+            </div>
+            
+            <div id="transactionsList">
+                <p style="text-align: center; color: #7f8c8d; font-style: italic;">
+                    Keine Transaktionen gefunden
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/restaurant-header.js"></script>
+    <script>
+        // Inicializar página
+        document.addEventListener('DOMContentLoaded', function() {
+            // CORRIGIDO: Carregar dados ANTES de verificar seleção
+            loadDataFromStorage();
+            
+            checkRestaurantSelection();
+            if (!isRestaurantSelected()) {
+                return;
+            }
+            // updateRestaurantName() removido - esta página não tem elemento #restaurantName
+            initCashflowPage();
+            updateFinancialSummary();
+            displayTransactions();
+            populateFilterCategories();
+        });
+
+        function initCashflowPage() {
+            document.getElementById('date').valueAsDate = new Date();
+            document.getElementById('transactionType').addEventListener('change', function() {
+                toggleCategoryOptions(this.value);
+            });
+            document.getElementById('cashflowForm').addEventListener('submit', handleFormSubmit);
+            document.getElementById('filterType').addEventListener('change', displayTransactions);
+            document.getElementById('filterCategory').addEventListener('change', displayTransactions);
+            document.getElementById('filterMonth').addEventListener('change', displayTransactions);
+        }
+
+        function toggleCategoryOptions(type) {
+            const incomeOptions = document.getElementById('incomeOptions');
+            const expenseOptions = document.getElementById('expenseOptions');
+            const categorySelect = document.getElementById('category');
+            
+            categorySelect.value = '';
+            
+            if (type === 'income') {
+                incomeOptions.style.display = 'block';
+                expenseOptions.style.display = 'none';
+            } else if (type === 'expense') {
+                incomeOptions.style.display = 'none';
+                expenseOptions.style.display = 'block';
+            } else {
+                incomeOptions.style.display = 'none';
+                expenseOptions.style.display = 'none';
+            }
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const formData = {
+                type: document.getElementById('transactionType').value,
+                description: document.getElementById('description').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                category: document.getElementById('category').value,
+                date: document.getElementById('date').value
+            };
+
+            if (formData.amount <= 0) {
+                showNotification('Der Betrag muss größer als 0 sein', 'error');
+                return;
+            }
+
+            addCashflowEntry(formData);
+            
+            document.getElementById('cashflowForm').reset();
+            document.getElementById('date').valueAsDate = new Date();
+            toggleCategoryOptions('');
+            
+            updateFinancialSummary();
+            displayTransactions();
+            
+            showNotification('Transaktion erfolgreich hinzugefügt', 'success');
+        }
+
+        function updateFinancialSummary() {
+            const totalIncome = appData.cashflow
+                .filter(entry => entry.type === 'income')
+                .reduce((sum, entry) => sum + parseFloat(entry.amount), 0);
+            
+            const totalExpenses = appData.cashflow
+                .filter(entry => entry.type === 'expense')
+                .reduce((sum, entry) => sum + parseFloat(entry.amount), 0);
+            
+            const netBalance = totalIncome - totalExpenses;
+
+            document.getElementById('totalIncome').textContent = formatCurrency(totalIncome);
+            document.getElementById('totalExpenses').textContent = formatCurrency(totalExpenses);
+            document.getElementById('netBalance').textContent = formatCurrency(netBalance);
+            
+            const balanceElement = document.getElementById('netBalance');
+            if (netBalance < 0) {
+                balanceElement.style.color = '#e74c3c';
+            } else {
+                balanceElement.style.color = '#27ae60';
+            }
+        }
+
+        function displayTransactions() {
+            const container = document.getElementById('transactionsList');
+            let transactions = [...appData.cashflow];
+            
+            const filterType = document.getElementById('filterType').value;
+            const filterCategory = document.getElementById('filterCategory').value;
+            const filterMonth = document.getElementById('filterMonth').value;
+            
+            if (filterType) {
+                transactions = transactions.filter(t => t.type === filterType);
+            }
+            
+            if (filterCategory) {
+                transactions = transactions.filter(t => t.category === filterCategory);
+            }
+            
+            if (filterMonth) {
+                transactions = transactions.filter(t => {
+                    const transactionMonth = t.date.substring(0, 7);
+                    return transactionMonth === filterMonth;
+                });
+            }
+            
+            transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (transactions.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #7f8c8d; font-style: italic;">Keine Transaktionen gefunden</p>';
+                return;
+            }
+
+            const categoryLabels = {
+                'sales': 'Verkäufe',
+                'delivery': 'Lieferungen',
+                'catering': 'Catering',
+                'other_income': 'Sonstige Einnahmen',
+                'food_supplies': 'Lebensmittel',
+                'rent': 'Miete',
+                'utilities': 'Nebenkosten',
+                'staff': 'Personal',
+                'equipment': 'Ausrüstung',
+                'marketing': 'Marketing',
+                'maintenance': 'Wartung',
+                'other_expense': 'Sonstige Ausgaben'
+            };
+            
+            container.innerHTML = transactions
+                .map(transaction => {
+                    return `
+                        <div class="item" style="border-left-color: ${transaction.type === 'income' ? '#27ae60' : '#e74c3c'};">
+                            <div class="item-info">
+                                <h4>${transaction.description}</h4>
+                                <p>${categoryLabels[transaction.category] || transaction.category} • ${formatDate(transaction.date)}</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 1.3em; font-weight: bold; color: ${transaction.type === 'income' ? '#27ae60' : '#e74c3c'};">
+                                    ${transaction.type === 'income' ? '+' : '-'}${formatCurrency(transaction.amount)}
+                                </div>
+                                <div class="item-actions">
+                                    <button class="btn btn-danger" onclick="deleteTransaction('${transaction.id}')">
+                                        <span class="icon icon-delete"></span>
+                                        Löschen
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                })
+                .join('');
+        }
+
+        function populateFilterCategories() {
+            const filterCategory = document.getElementById('filterCategory');
+            const categories = [...new Set(appData.cashflow.map(t => t.category))];
+            
+            const categoryLabels = {
+                'sales': 'Verkäufe',
+                'delivery': 'Lieferungen', 
+                'catering': 'Catering',
+                'other_income': 'Sonstige Einnahmen',
+                'food_supplies': 'Lebensmittel',
+                'rent': 'Miete',
+                'utilities': 'Nebenkosten',
+                'staff': 'Personal',
+                'equipment': 'Ausrüstung',
+                'marketing': 'Marketing',
+                'maintenance': 'Wartung',
+                'other_expense': 'Sonstige Ausgaben'
+            };
+            
+            filterCategory.innerHTML = '<option value="">Alle Kategorien</option>' +
+                categories.map(category => 
+                    `<option value="${category}">${categoryLabels[category] || category}</option>`
+                ).join('');
+        }
+
+        function deleteTransaction(id) {
+            if (confirm('Sind Sie sicher, dass Sie diese Transaktion löschen möchten?')) {
+                removeCashflowEntry(id);
+                updateFinancialSummary();
+                displayTransactions();
+                populateFilterCategories();
+                showNotification('Transaktion erfolgreich gelöscht', 'success');
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('filterType').value = '';
+            document.getElementById('filterCategory').value = '';
+            document.getElementById('filterMonth').value = '';
+            displayTransactions();
+        }
+    </script>
+</body>
+</html>
+ 

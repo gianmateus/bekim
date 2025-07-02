@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Restaurant Management</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .insights-section {
+            margin: 30px 0;
+        }
+        
+        .insights-tabs {
+            display: flex;
+            border-bottom: 2px solid #e1e8ed;
+            margin-bottom: 20px;
+        }
+        
+        .insights-tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: #7f8c8d;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .insights-tab.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+        
+        .insights-content {
+            display: none;
+        }
+        
+        .insights-content.active {
+            display: block;
+        }
+        
+        .insight-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            border-left: 4px solid #3498db;
+        }
+        
+        .insight-card.insight-positive {
+            border-left-color: #27ae60;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fff9 100%);
+        }
+        
+        .insight-card.insight-warning {
+            border-left-color: #f39c12;
+            background: linear-gradient(135deg, #ffffff 0%, #fffcf5 100%);
+        }
+        
+        .insight-card.insight-info {
+            border-left-color: #3498db;
+            background: linear-gradient(135deg, #ffffff 0%, #f7fbff 100%);
+        }
+        
+        .alert-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .alert-card.alert-urgent {
+            border-left-color: #e74c3c;
+            background: linear-gradient(135deg, #ffffff 0%, #fdf2f2 100%);
+        }
+        
+        .alert-card.alert-warning {
+            border-left-color: #f39c12;
+            background: linear-gradient(135deg, #ffffff 0%, #fffcf5 100%);
+        }
+        
+        .insight-icon, .alert-icon {
+            font-size: 2rem;
+            margin-right: 15px;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .insight-content h4, .alert-content h4 {
+            margin: 0 0 8px 0;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+        
+        .insight-content p, .alert-content p {
+            margin: 0;
+            color: #7f8c8d;
+            line-height: 1.4;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #bdc3c7;
+        }
+        
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🏪 Restaurant Dashboard</h1>
+            <p id="restaurantName">Zentrale Verwaltung für Ihr Restaurant</p>
+            <button onclick="navigateTo('index')" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;">
+                🔄 Restaurant wechseln
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Estatísticas principais -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalBalance">€0,00</div>
+                <div class="stat-label">Gesamtsaldo</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="monthlyIncome">€0,00</div>
+                <div class="stat-label">Monatliches Einkommen</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="monthlyExpenses">€0,00</div>
+                <div class="stat-label">Monatliche Ausgaben</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="lowStockItems">0</div>
+                <div class="stat-label">Niedrige Lagerbestände</div>
+            </div>
+        </div>
+
+        <!-- Botões de navegação principais -->
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <span class="icon">💰</span>
+                <h3>Finanzen</h3>
+                <p>Einnahmen und Ausgaben verwalten</p>
+                <button class="nav-button btn-cashflow" onclick="console.log('🔍 BOTÃO FINANZEN CLICADO!'); console.log('🔍 navigateTo existe?', typeof navigateTo); console.log('🔍 currentRestaurant no clique:', currentRestaurant); try { navigateTo('konten'); } catch(e) { console.error('❌ ERRO no navigateTo:', e); }">
+                    <span class="icon">💰</span>
+                    Finanzen öffnen
+                </button>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="icon">📦</span>
+                <h3>Inventar</h3>
+                <p>Lagerbestand überwachen</p>
+                <button class="nav-button btn-inventory" onclick="navigateTo('inventar')">
+                    <span class="icon">📦</span>
+                    Inventar öffnen
+                </button>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="icon">🛒</span>
+                <h3>Einkaufsliste</h3>
+                <p>Was eingekauft werden muss</p>
+                <button class="nav-button btn-inventory" onclick="navigateTo('einkaeufe')">
+                    <span class="icon">🛒</span>
+                    Einkaufen gehen
+                </button>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="icon">👥</span>
+                <h3>Mitarbeiter</h3>
+                <p>Personal und Arbeitszeiten</p>
+                <button class="nav-button btn-recurring" onclick="navigateTo('personal')">
+                    <span class="icon">👥</span>
+                    Personal verwalten
+                </button>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="icon">🍳</span>
+                <h3>Küchenvorbereitung</h3>
+                <p>Aufgaben und Vorbereitungen</p>
+                <button class="nav-button btn-cashflow" onclick="navigateTo('vorbereitungen')">
+                    <span class="icon">🍳</span>
+                    Vorbereitungen
+                </button>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="icon">📅</span>
+                <h3>Kalender</h3>
+                <p>Termine und Ereignisse</p>
+                <button class="nav-button btn-recurring" onclick="navigateTo('kalender')">
+                    <span class="icon">📅</span>
+                    Kalender öffnen
+                </button>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="icon">🔄</span>
+                <h3>Wiederkehrende Zahlungen</h3>
+                <p>Monatliche und wiederkehrende Kosten</p>
+                <button class="nav-button btn-recurring" onclick="navigateTo('recurring')">
+                    <span class="icon">🔄</span>
+                    Zahlungen verwalten
+                </button>
+            </div>
+
+            <div class="dashboard-card">
+                <span class="icon">⚙️</span>
+                <h3>Einstellungen</h3>
+                <p>Daten speichern und laden</p>
+                <button class="nav-button btn-settings" onclick="navigateTo('settings')">
+                    <span class="icon">⚙️</span>
+                    Einstellungen öffnen
+                </button>
+            </div>
+        </div>
+
+        <!-- Schnellübersicht der letzten Aktivitäten -->
+        <div class="card">
+            <h2>Letzte Aktivitäten</h2>
+            <div id="recentActivities">
+                <p style="text-align: center; color: #7f8c8d; font-style: italic;">
+                    Keine aktuellen Aktivitäten gefunden
+                </p>
+            </div>
+        </div>
+
+        <!-- Sistema de Insights -->
+        <div class="insights-section">
+            <div class="card">
+                <div class="insights-tabs">
+                    <button class="insights-tab active" onclick="switchInsightsTab('insights')">
+                        🧠 Erkenntnisse
+                    </button>
+                    <button class="insights-tab" onclick="switchInsightsTab('alerts')">
+                        ⚠️ Warnungen
+                    </button>
+                </div>
+                
+                <div id="insights-content" class="insights-content active">
+                    <div class="empty-state">
+                        <span class="icon">🧠</span>
+                        <p>Erkenntnisse werden geladen...</p>
+                    </div>
+                </div>
+                
+                <div id="alerts-content" class="insights-content">
+                    <div class="empty-state">
+                        <span class="icon">⚠️</span>
+                        <p>Warnungen werden geladen...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Anstehende Aufgaben -->
+        <div class="card">
+            <h2>Anstehende Küchen-Aufgaben</h2>
+            <div id="upcomingPayments">
+                <p style="text-align: center; color: #7f8c8d; font-style: italic;">
+                    Keine anstehenden Aufgaben
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/eventBus.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="../js/insights.js"></script>
+    <script src="../js/autoSave.js"></script>
+    <script src="../js/restaurant-header.js"></script>
+    <script>
+        /**
+         * Inicializa o dashboard
+         */
+        function initDashboard() {
+            // Dados já foram carregados antes da chamada desta função
+            updateStatistics();
+            showRecentActivities();
+            showUpcomingPayments();
+            refreshInsights();
+            
+            // Adicionar animações de entrada
+            addEntranceAnimations();
+        }
+
+        /**
+         * Adiciona animações de entrada aos elementos
+         */
+        function addEntranceAnimations() {
+            // Adicionar fade-in aos cards do dashboard
+            const dashboardCards = document.querySelectorAll('.dashboard-card');
+            dashboardCards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+
+            // Adicionar fade-in aos stat cards
+            const statCards = document.querySelectorAll('.stat-card');
+            statCards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 150);
+            });
+
+            // Adicionar micro-bounce aos botões quando clicados
+            const buttons = document.querySelectorAll('.nav-button, .btn');
+            buttons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.target.classList.add('micro-bounce');
+                    setTimeout(() => {
+                        e.target.classList.remove('micro-bounce');
+                    }, 600);
+                });
+            });
+        }
+
+        /**
+         * Atualiza o nome do restaurante no header
+         */
+        function updateRestaurantName() {
+            const restaurantName = getCurrentRestaurantName();
+            document.getElementById('restaurantName').textContent = `Zentrale Verwaltung für ${restaurantName}`;
+        }
+
+        /**
+         * Atualiza as estatísticas do dashboard
+         */
+        function updateStatistics() {
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData) return;
+
+            // Calcular saldo total
+            const totalIncome = (restaurantData.cashflow || [])
+                .filter(entry => entry.typ === 'einnahme')
+                .reduce((sum, entry) => sum + parseFloat(entry.betrag || 0), 0);
+            
+            const totalExpenses = (restaurantData.cashflow || [])
+                .filter(entry => entry.typ === 'ausgabe')
+                .reduce((sum, entry) => sum + parseFloat(entry.betrag || 0), 0);
+            
+            const totalBalance = totalIncome - totalExpenses;
+            
+            // Calcular valores do mês atual
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            
+            const monthlyIncome = (restaurantData.cashflow || [])
+                .filter(entry => {
+                    const entryDate = new Date(entry.datum);
+                    return entry.typ === 'einnahme' && 
+                           entryDate.getMonth() === currentMonth && 
+                           entryDate.getFullYear() === currentYear;
+                })
+                .reduce((sum, entry) => sum + parseFloat(entry.betrag || 0), 0);
+            
+            const monthlyExpenses = (restaurantData.cashflow || [])
+                .filter(entry => {
+                    const entryDate = new Date(entry.datum);
+                    return entry.typ === 'ausgabe' && 
+                           entryDate.getMonth() === currentMonth && 
+                           entryDate.getFullYear() === currentYear;
+                })
+                .reduce((sum, entry) => sum + parseFloat(entry.betrag || 0), 0);
+            
+            // Contar itens com estoque baixo
+            const lowStockItems = (restaurantData.inventory || [])
+                .filter(item => item.aktuellerBestand <= (item.wöchentlicherBedarf * 0.3))
+                .length;
+
+            // Atualizar elementos na página
+            document.getElementById('totalBalance').textContent = formatCurrency(totalBalance);
+            document.getElementById('monthlyIncome').textContent = formatCurrency(monthlyIncome);
+            document.getElementById('monthlyExpenses').textContent = formatCurrency(monthlyExpenses);
+            document.getElementById('lowStockItems').textContent = lowStockItems;
+            
+            // Mudar cor do saldo se negativo
+            const balanceElement = document.getElementById('totalBalance');
+            if (totalBalance < 0) {
+                balanceElement.style.color = '#e74c3c';
+            } else {
+                balanceElement.style.color = '#27ae60';
+            }
+        }
+
+        /**
+         * Mostra atividades recentes
+         */
+        function showRecentActivities() {
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData) return;
+            
+            const container = document.getElementById('recentActivities');
+            const recentEntries = (restaurantData.cashflow || [])
+                .sort((a, b) => new Date(b.datum) - new Date(a.datum))
+                .slice(0, 5);
+
+            if (recentEntries.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #7f8c8d; font-style: italic;">Keine aktuellen Aktivitäten gefunden</p>';
+                return;
+            }
+
+            container.innerHTML = recentEntries
+                .map(entry => `
+                    <div class="item">
+                        <div class="item-info">
+                            <h4>${entry.beschreibung || 'Keine Beschreibung'}</h4>
+                            <p>${entry.typ === 'einnahme' ? 'Einnahme' : 'Ausgabe'} • ${formatDate(entry.datum)} • ${entry.kategorie}</p>
+                        </div>
+                        <div style="font-size: 1.2em; font-weight: bold; color: ${entry.typ === 'einnahme' ? '#27ae60' : '#e74c3c'};">
+                            ${entry.typ === 'einnahme' ? '+' : '-'}${formatCurrency(Math.abs(entry.betrag))}
+                        </div>
+                    </div>
+                `)
+                .join('');
+        }
+
+        /**
+         * Mostra pagamentos recorrentes próximos
+         */
+        function showUpcomingPayments() {
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData) return;
+            
+            const container = document.getElementById('upcomingPayments');
+            const today = new Date();
+            const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+            // Note: This would work with recurring payments if that module was implemented
+            // For now, showing recent preparations as a placeholder
+            const recentPreparations = (restaurantData.preparations || [])
+                .filter(prep => prep.status === 'pending')
+                .slice(0, 3);
+
+            if (recentPreparations.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #7f8c8d; font-style: italic;">Keine anstehenden Aufgaben</p>';
+                return;
+            }
+
+            container.innerHTML = recentPreparations
+                .map(prep => {
+                    const priorityColor = prep.priority === 'high' ? '#e74c3c' : prep.priority === 'medium' ? '#f39c12' : '#3498db';
+                    const priorityText = prep.priority === 'high' ? 'Hoch' : prep.priority === 'medium' ? 'Mittel' : 'Niedrig';
+                    
+                    return `
+                        <div class="item" style="border-left-color: ${priorityColor};">
+                            <div class="item-info">
+                                <h4>${prep.title}</h4>
+                                <p>Küchenvorbereitung • Priorität: ${priorityText}</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.9em; color: ${priorityColor};">
+                                    ${prep.category || 'Allgemein'}
+                                </div>
+                                ${prep.estimatedTime ? `
+                                    <div style="font-size: 0.8em; color: #636e72;">
+                                        ~${prep.estimatedTime} Min
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                })
+                .join('');
+        }
+
+        /**
+         * Alterna entre abas de insights
+         */
+        function switchInsightsTab(tab) {
+            // Remover classe active de todas as abas
+            document.querySelectorAll('.insights-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Remover classe active de todos os conteúdos
+            document.querySelectorAll('.insights-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Ativar aba clicada
+            event.target.classList.add('active');
+            
+            // Ativar conteúdo correspondente
+            document.getElementById(`${tab}-content`).classList.add('active');
+        }
+
+        /**
+         * Atualiza os insights automatizados
+         */
+        function refreshInsights() {
+            if (!insightEngine) {
+                console.warn('InsightEngine não inicializado');
+                return;
+            }
+            
+            try {
+                const formatted = insightEngine.formatInsightsForDisplay();
+                
+                // Atualizar insights
+                const insightsContent = document.getElementById('insights-content');
+                if (formatted.insights && formatted.insights.trim()) {
+                    insightsContent.innerHTML = formatted.insights;
+                } else {
+                    insightsContent.innerHTML = `
+                        <div class="empty-state">
+                            <span class="icon">✨</span>
+                            <p>Alle Bereiche laufen optimal!<br>Keine besonderen Erkenntnisse verfügbar.</p>
+                        </div>
+                    `;
+                }
+                
+                // Atualizar alertas
+                const alertsContent = document.getElementById('alerts-content');
+                if (formatted.alerts && formatted.alerts.trim()) {
+                    alertsContent.innerHTML = formatted.alerts;
+                } else {
+                    alertsContent.innerHTML = `
+                        <div class="empty-state">
+                            <span class="icon">✅</span>
+                            <p>Alle Systeme sind in Ordnung!<br>Keine Warnungen oder Probleme.</p>
+                        </div>
+                    `;
+                }
+                
+                console.log('✅ Insights atualizados no dashboard');
+            } catch (error) {
+                console.error('❌ Erro ao atualizar insights:', error);
+            }
+        }
+
+        // Inicializar dashboard quando a página carregar
+        document.addEventListener('DOMContentLoaded', () => {
+            // CORRIGIDO: Carregar dados ANTES de verificar seleção
+            loadDataFromStorage();
+            
+            checkRestaurantSelection();
+            if (!isRestaurantSelected()) {
+                return;
+            }
+            updateRestaurantName();
+            initDashboard();
+            
+            // Configurar listeners para EventBus (consolidado aqui)
+            if (typeof eventBus !== 'undefined') {
+                eventBus.on(EVENTS.DATA_CHANGED, () => {
+                    setTimeout(refreshInsights, 100); // Pequeno delay para dados serem processados
+                });
+                
+                eventBus.on(EVENTS.RESTAURANT_CHANGED, () => {
+                    setTimeout(() => {
+                        updateRestaurantName();
+                        updateStatistics();
+                        refreshInsights();
+                    }, 100);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventar - Restaurant Management</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .search-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .search-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .sort-select {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            min-width: 200px;
+        }
+        
+        .inventory-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .inventory-table th,
+        .inventory-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            font-size: 16px;
+        }
+        
+        .inventory-table th {
+            background: #34495e;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .inventory-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .stock-input {
+            width: 80px;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 16px;
+        }
+        
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        
+        .status-good { background: #27ae60; }
+        .status-warning { background: #f39c12; }
+        .status-critical { background: #e74c3c; }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-icon {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-edit {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .modal h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+        
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        .shopping-summary {
+            background: #e8f5e8;
+            border: 2px solid #27ae60;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .shopping-summary h4 {
+            margin: 0 0 10px 0;
+            color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>📦 Inventar</h1>
+            <p>Produktbestand und Einkaufslisten verwalten</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Navegação -->
+        <div class="nav-buttons">
+            <button class="nav-button" onclick="navigateTo('dashboard')">
+                <span class="icon">🏠</span>
+                Dashboard
+            </button>
+            <button class="nav-button" onclick="navigateTo('kalender')">
+                <span class="icon">📅</span>
+                Kalender
+            </button>
+        </div>
+
+        <!-- Botão principal para adicionar produto -->
+        <div style="text-align: center; margin: 30px 0;">
+            <button class="btn btn-success" onclick="openAddProductModal()" style="font-size: 20px; padding: 20px 40px;">
+                <span class="icon">➕</span>
+                Neues Produkt hinzufügen
+            </button>
+        </div>
+
+        <!-- Controles de busca e ordenação -->
+        <div class="card">
+            <div class="search-controls">
+                <input type="text" class="search-input" id="searchInput" placeholder="🔍 Produkt suchen..." onkeyup="filterProducts()">
+                <select class="sort-select" id="sortSelect" onchange="sortProducts()">
+                    <option value="name">Nach Name sortieren</option>
+                    <option value="need">Nach Bedarf sortieren</option>
+                    <option value="stock">Nach Bestand sortieren</option>
+                    <option value="status">Nach Status sortieren</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Botão para gerar lista de compras -->
+        <div style="text-align: center; margin: 20px 0;">
+            <button class="btn btn-warning" onclick="generateShoppingList()" style="font-size: 18px; padding: 15px 30px;">
+                <span class="icon">🛒</span>
+                Einkaufsliste generieren
+            </button>
+        </div>
+
+        <!-- Tabela de produtos -->
+        <div class="card">
+            <h2>Produktliste</h2>
+            <div id="productsContainer">
+                <div class="empty-state">
+                    <p>Noch keine Produkte hinzugefügt</p>
+                    <p>Klicken Sie auf "Neues Produkt hinzufügen" um zu beginnen</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para adicionar produto -->
+        <div id="productModal" class="modal">
+            <div class="modal-content">
+                <h3 id="modalTitle">Neues Produkt hinzufügen</h3>
+                <form id="productForm">
+                    <input type="hidden" id="editProductId">
+                    
+                    <div class="form-group">
+                        <label for="produktName">🏷️ Produktname:</label>
+                        <input type="text" id="produktName" required placeholder="z.B. Tomaten, Olivenöl...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="einheit">📦 Einheit:</label>
+                        <select id="einheit" required>
+                            <option value="">Bitte auswählen...</option>
+                            <option value="kg">Kilogramm (kg)</option>
+                            <option value="g">Gramm (g)</option>
+                            <option value="L">Liter (L)</option>
+                            <option value="ml">Milliliter (ml)</option>
+                            <option value="Stück">Stück</option>
+                            <option value="Paket">Paket</option>
+                            <option value="Flasche">Flasche</option>
+                            <option value="Dose">Dose</option>
+                            <option value="Kasten">Kasten</option>
+                            <option value="Beutel">Beutel</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="wöchentlicherBedarf">🔁 Wöchentlicher Bedarf:</label>
+                        <input type="number" id="wöchentlicherBedarf" required min="0" step="0.1" placeholder="Menge pro Woche">
+                    </div>
+                    
+                    <div class="form-group" id="currentStockGroup" style="display: none;">
+                        <label for="aktuellerBestand">📊 Aktueller Bestand:</label>
+                        <input type="number" id="aktuellerBestand" min="0" step="0.1" placeholder="Aktuelle Menge">
+                    </div>
+                    
+                    <div class="modal-buttons">
+                        <button type="submit" class="btn btn-success">
+                            <span class="icon">✔️</span>
+                            <span id="submitButtonText">Hinzufügen</span>
+                        </button>
+                        <button type="button" class="btn" onclick="closeProductModal()">
+                            <span class="icon">❌</span>
+                            Abbrechen
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/eventBus.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="../js/restaurant-header.js"></script>
+    <script>
+        // Inicializar página
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 DEBUG INVENTAR - Iniciando carregamento');
+            
+            // CORRIGIDO: Carregar dados ANTES de verificar seleção
+            loadDataFromStorage();
+            
+            console.log('🔍 DEBUG INVENTAR - Após loadDataFromStorage, currentRestaurant:', currentRestaurant);
+            console.log('🔍 DEBUG INVENTAR - appData keys:', Object.keys(appData || {}));
+            console.log('🔍 DEBUG INVENTAR - localStorage:', localStorage.getItem('selected_restaurant'));
+            
+            // Aguardar um pouco para garantir que os dados estão prontos
+            setTimeout(() => {
+                if (!checkRestaurantSelection()) {
+                    console.log('❌ DEBUG INVENTAR - Falha na verificação de restaurante, redirecionando');
+                    return;
+                }
+                
+                if (!isRestaurantSelected()) {
+                    console.log('❌ DEBUG INVENTAR - isRestaurantSelected retornou false, redirecionando');
+                    return;
+                }
+                
+                console.log('✅ DEBUG INVENTAR - Restaurante selecionado, continuando inicialização');
+                // updateRestaurantName() removido - esta página não tem elemento #restaurantName
+                initInventarPage();
+                displayProducts();
+            }, 100); // Aguardar para garantir que dados estão carregados
+        });
+
+        /**
+         * Inicializa a página de inventário
+         */
+        function initInventarPage() {
+            // Event listener para formulário
+            document.getElementById('productForm').addEventListener('submit', handleProductFormSubmit);
+            
+            // Fechar modal ao clicar fora
+            document.getElementById('productModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeProductModal();
+                }
+            });
+        }
+
+        /**
+         * Abre modal para adicionar produto
+         */
+        function openAddProductModal() {
+            document.getElementById('modalTitle').textContent = 'Neues Produkt hinzufügen';
+            document.getElementById('submitButtonText').textContent = 'Hinzufügen';
+            document.getElementById('currentStockGroup').style.display = 'none';
+            document.getElementById('editProductId').value = '';
+            document.getElementById('productForm').reset();
+            document.getElementById('produktName').focus();
+            document.getElementById('productModal').style.display = 'block';
+        }
+
+        /**
+         * Abre modal para editar produto
+         */
+        function openEditProductModal(productId) {
+            const product = appData.inventory.find(p => p.id === productId);
+            if (!product) return;
+
+            document.getElementById('modalTitle').textContent = 'Produkt bearbeiten';
+            document.getElementById('submitButtonText').textContent = 'Speichern';
+            document.getElementById('currentStockGroup').style.display = 'block';
+            document.getElementById('editProductId').value = productId;
+            
+            document.getElementById('produktName').value = product.produkt;
+            document.getElementById('einheit').value = product.einheit;
+            document.getElementById('wöchentlicherBedarf').value = product.wöchentlicherBedarf;
+            document.getElementById('aktuellerBestand').value = product.aktuellerBestand || 0;
+            
+            document.getElementById('productModal').style.display = 'block';
+        }
+
+        /**
+         * Fecha modal
+         */
+        function closeProductModal() {
+            document.getElementById('productModal').style.display = 'none';
+        }
+
+        /**
+         * Manipula envio do formulário
+         */
+        function handleProductFormSubmit(e) {
+            e.preventDefault();
+            
+            const editId = document.getElementById('editProductId').value;
+            const productData = {
+                produkt: document.getElementById('produktName').value.trim(),
+                einheit: document.getElementById('einheit').value,
+                wöchentlicherBedarf: parseFloat(document.getElementById('wöchentlicherBedarf').value),
+                aktuellerBestand: parseFloat(document.getElementById('aktuellerBestand').value) || 0
+            };
+
+            if (editId) {
+                // Editar produto existente
+                updateInventoryProduct(editId, productData);
+                showNotification('Produkt erfolgreich aktualisiert!', 'success');
+            } else {
+                // Adicionar novo produto
+                addInventoryProduct(productData);
+                showNotification('Produkt erfolgreich hinzugefügt!', 'success');
+            }
+
+            closeProductModal();
+            displayProducts();
+        }
+
+        /**
+         * Adiciona produto ao inventário
+         */
+        function addInventoryProduct(product) {
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData) return false;
+            
+            product.id = generateId();
+            restaurantData.inventory.push(product);
+            saveDataToStorage();
+            return true;
+        }
+
+        /**
+         * Atualiza produto no inventário
+         */
+        function updateInventoryProduct(id, updates) {
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData) return false;
+            
+            const index = restaurantData.inventory.findIndex(p => p.id === id);
+            if (index !== -1) {
+                restaurantData.inventory[index] = { ...restaurantData.inventory[index], ...updates };
+                saveDataToStorage();
+                return true;
+            }
+            return false;
+        }
+
+        /**
+         * Remove produto do inventário
+         */
+        function removeInventoryProduct(id) {
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData) return false;
+            
+            const product = restaurantData.inventory.find(p => p.id === id);
+            if (product && confirm(`Möchten Sie "${product.produkt}" wirklich löschen?`)) {
+                restaurantData.inventory = restaurantData.inventory.filter(p => p.id !== id);
+                saveDataToStorage();
+                displayProducts();
+                showNotification('Produkt gelöscht!', 'info');
+                return true;
+            }
+            return false;
+        }
+
+        /**
+         * Atualiza estoque atual de um produto
+         */
+        function updateCurrentStock(id, newStock) {
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData) return false;
+            
+            const index = restaurantData.inventory.findIndex(p => p.id === id);
+            if (index !== -1) {
+                restaurantData.inventory[index].aktuellerBestand = parseFloat(newStock) || 0;
+                saveDataToStorage();
+                displayProducts();
+                return true;
+            }
+            return false;
+        }
+
+        /**
+         * Calcula status do estoque
+         */
+        function getStockStatus(product) {
+            const needed = Math.max(0, product.wöchentlicherBedarf - (product.aktuellerBestand || 0));
+            const percentage = (product.aktuellerBestand || 0) / product.wöchentlicherBedarf;
+            
+            if (percentage >= 1) {
+                return { status: 'good', class: 'status-good', text: 'Ausreichend' };
+            } else if (percentage >= 0.8) {
+                return { status: 'warning', class: 'status-warning', text: 'Wenig verfügbar' };
+            } else {
+                return { status: 'critical', class: 'status-critical', text: 'Kritisch niedrig' };
+            }
+        }
+
+        /**
+         * Exibe produtos na tabela
+         */
+        function displayProducts() {
+            const container = document.getElementById('productsContainer');
+            const restaurantData = getCurrentRestaurantData();
+            
+            if (!restaurantData || restaurantData.inventory.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>Noch keine Produkte hinzugefügt</p>
+                        <p>Klicken Sie auf "Neues Produkt hinzufügen" um zu beginnen</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Produkt</th>
+                            <th>Einheit</th>
+                            <th>Wöchentlicher Bedarf</th>
+                            <th>Aktueller Bestand</th>
+                            <th>Zu kaufen</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            let filteredProducts = [...restaurantData.inventory];
+            
+            // Aplicar filtro de busca
+            const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            if (searchTerm) {
+                filteredProducts = filteredProducts.filter(product => 
+                    product.produkt.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // Aplicar ordenação
+            const sortBy = document.getElementById('sortSelect')?.value || 'name';
+            filteredProducts.sort((a, b) => {
+                switch (sortBy) {
+                    case 'name':
+                        return a.produkt.localeCompare(b.produkt);
+                    case 'need':
+                        return b.wöchentlicherBedarf - a.wöchentlicherBedarf;
+                    case 'stock':
+                        return (b.aktuellerBestand || 0) - (a.aktuellerBestand || 0);
+                    case 'status':
+                        const statusA = getStockStatus(a).status;
+                        const statusB = getStockStatus(b).status;
+                        const priority = { critical: 0, warning: 1, good: 2 };
+                        return priority[statusA] - priority[statusB];
+                    default:
+                        return 0;
+                }
+            });
+
+            filteredProducts.forEach(product => {
+                const status = getStockStatus(product);
+                const zuKaufen = Math.max(0, product.wöchentlicherBedarf - (product.aktuellerBestand || 0));
+                
+                html += `
+                    <tr>
+                        <td>
+                            <span class="status-indicator ${status.class}" title="${status.text}"></span>
+                        </td>
+                        <td><strong>${product.produkt}</strong></td>
+                        <td>${product.einheit}</td>
+                        <td>${product.wöchentlicherBedarf} ${product.einheit}</td>
+                        <td>
+                            <input type="number" 
+                                   class="stock-input" 
+                                   value="${product.aktuellerBestand || 0}" 
+                                   min="0" 
+                                   step="0.1"
+                                   onchange="updateCurrentStock('${product.id}', this.value)">
+                            ${product.einheit}
+                        </td>
+                        <td><strong>${zuKaufen.toFixed(1)} ${product.einheit}</strong></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-icon btn-edit" onclick="openEditProductModal('${product.id}')" title="Bearbeiten">
+                                    ✏️
+                                </button>
+                                <button class="btn-icon btn-delete" onclick="removeInventoryProduct('${product.id}')" title="Löschen">
+                                    🗑️
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        /**
+         * Filtra produtos por busca
+         */
+        function filterProducts() {
+            displayProducts();
+        }
+
+        /**
+         * Ordena produtos
+         */
+        function sortProducts() {
+            displayProducts();
+        }
+
+        /**
+         * Gera lista de compras
+         */
+        function generateShoppingList() {
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData) return;
+            
+            const shoppingItems = [];
+            
+            restaurantData.inventory.forEach(product => {
+                const zuKaufen = Math.max(0, product.wöchentlicherBedarf - (product.aktuellerBestand || 0));
+                if (zuKaufen > 0) {
+                    shoppingItems.push({
+                        produkt: product.produkt,
+                        menge: parseFloat(zuKaufen.toFixed(1)),
+                        einheit: product.einheit,
+                        status: 'offen'
+                    });
+                }
+            });
+
+            if (shoppingItems.length === 0) {
+                showNotification('Keine Produkte müssen eingekauft werden!', 'info');
+                return;
+            }
+
+            // Salvar lista de compras
+            restaurantData.shopping = shoppingItems;
+            saveDataToStorage();
+
+            // Mostrar resumo
+            const summary = document.createElement('div');
+            summary.className = 'shopping-summary';
+            summary.innerHTML = `
+                <h4>🛒 Einkaufsliste generiert!</h4>
+                <p><strong>${shoppingItems.length} Artikel</strong> wurden zur Einkaufsliste hinzugefügt:</p>
+                <ul>
+                    ${shoppingItems.map(item => `<li>${item.menge} ${item.einheit} ${item.produkt}</li>`).join('')}
+                </ul>
+                <p>Die Liste ist jetzt in der Seite "Einkäufe" verfügbar.</p>
+                <button class="btn btn-primary" onclick="navigateTo('einkaeufe')" style="margin-top: 10px;">
+                    Zur Einkaufsliste gehen
+                </button>
+            `;
+
+            // Inserir resumo antes da tabela
+            const container = document.getElementById('productsContainer');
+            container.parentNode.insertBefore(summary, container);
+
+            // Remover resumo após 10 segundos
+            setTimeout(() => {
+                if (summary.parentNode) {
+                    summary.parentNode.removeChild(summary);
+                }
+            }, 10000);
+
+            showNotification(`Einkaufsliste mit ${shoppingItems.length} Artikeln generiert!`, 'success');
+        }
+    </script>
+</body>
+</html> 

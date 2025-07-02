@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wiederkehrende Zahlungen - Restaurant Management</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🔄 Wiederkehrende Zahlungen</h1>
+            <p>Regelmäßige Ausgaben und Zahlungen verwalten</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Navegação -->
+        <div class="nav-buttons">
+            <button class="nav-button" onclick="navigateTo('dashboard')">
+                <span class="icon icon-home"></span>
+                Dashboard
+            </button>
+        </div>
+
+        <!-- Estatísticas de pagamentos -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalRecurring">0</div>
+                <div class="stat-label">Aktive Zahlungen</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="monthlyTotal">€0,00</div>
+                <div class="stat-label">Monatliche Kosten</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="yearlyTotal">€0,00</div>
+                <div class="stat-label">Jährliche Kosten</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="upcomingDue">0</div>
+                <div class="stat-label">Fällig diese Woche</div>
+            </div>
+        </div>
+
+        <!-- Formulário para nova cobrança recorrente -->
+        <div class="card">
+            <h2>Neue wiederkehrende Zahlung hinzufügen</h2>
+            <form id="recurringForm">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                    <div class="form-group">
+                        <label for="description">Beschreibung:</label>
+                        <input type="text" id="description" placeholder="z.B. Miete, Strom, Personal..." required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="amount">Betrag (€):</label>
+                        <input type="number" id="amount" placeholder="0,00" step="0.01" min="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="frequency">Häufigkeit:</label>
+                        <select id="frequency" required>
+                            <option value="">Bitte auswählen...</option>
+                            <option value="weekly">Wöchentlich</option>
+                            <option value="monthly">Monatlich</option>
+                            <option value="quarterly">Vierteljährlich</option>
+                            <option value="yearly">Jährlich</option>
+                            <option value="custom">Benutzerdefiniert</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="customDateGroup" style="display: none;">
+                        <label for="customDate">Nächstes Fälligkeitsdatum:</label>
+                        <input type="date" id="customDate">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category">Kategorie:</label>
+                        <select id="category" required>
+                            <option value="">Bitte auswählen...</option>
+                            <option value="rent">Miete</option>
+                            <option value="utilities">Nebenkosten</option>
+                            <option value="insurance">Versicherung</option>
+                            <option value="loan">Kredite/Darlehen</option>
+                            <option value="staff">Personal</option>
+                            <option value="taxes">Steuern</option>
+                            <option value="services">Dienstleistungen</option>
+                            <option value="maintenance">Wartung</option>
+                            <option value="subscriptions">Abonnements</option>
+                            <option value="other">Sonstiges</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="startDate">Erstes Fälligkeitsdatum:</label>
+                        <input type="date" id="startDate" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success">
+                    <span class="icon icon-add"></span>
+                    Zahlung hinzufügen
+                </button>
+            </form>
+        </div>
+
+        <!-- Lista de pagamentos recorrentes -->
+        <div class="card">
+            <h2>📅 Zahlungen nach Monat anzeigen</h2>
+            
+            <!-- Navegação de mês -->
+            <div class="month-navigation-recurring" style="margin-bottom: 25px; display: flex; justify-content: center; align-items: center; gap: 20px;">
+                <button class="nav-btn" onclick="previousMonthRecurring()" title="Vorheriger Monat" style="padding: 10px 15px; border: none; background: #8e44ad; color: white; border-radius: 8px; cursor: pointer;">
+                    ◀ Zurück
+                </button>
+                <div class="current-month-recurring" id="currentMonthRecurring" style="font-size: 1.8em; font-weight: 600; min-width: 200px; text-align: center; background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white; padding: 15px 25px; border-radius: 12px;">
+                    <span id="currentMonthNameRecurring">November 2024</span>
+                </div>
+                <button class="nav-btn" onclick="nextMonthRecurring()" title="Nächster Monat" style="padding: 10px 15px; border: none; background: #8e44ad; color: white; border-radius: 8px; cursor: pointer;">
+                    Weiter ▶
+                </button>
+            </div>
+            
+            <!-- Seletores de mês e ano -->
+            <div class="month-selector-recurring" style="margin-bottom: 25px; display: flex; gap: 15px; justify-content: center; align-items: center;">
+                <select id="recurringMonthSelect" class="filter-select" onchange="changeMonthRecurring()" style="padding: 12px 18px; border: 2px solid #8e44ad; border-radius: 10px; font-size: 16px; background: white; color: #2c3e50; font-weight: 600; cursor: pointer; min-width: 130px;">
+                    <option value="0">Januar</option>
+                    <option value="1">Februar</option>
+                    <option value="2">März</option>
+                    <option value="3">April</option>
+                    <option value="4">Mai</option>
+                    <option value="5">Juni</option>
+                    <option value="6">Juli</option>
+                    <option value="7">August</option>
+                    <option value="8">September</option>
+                    <option value="9">Oktober</option>
+                    <option value="10">November</option>
+                    <option value="11">Dezember</option>
+                </select>
+                <select id="recurringYearSelect" class="filter-select" onchange="changeMonthRecurring()" style="padding: 12px 18px; border: 2px solid #8e44ad; border-radius: 10px; font-size: 16px; background: white; color: #2c3e50; font-weight: 600; cursor: pointer; min-width: 130px;">
+                    <option value="2022">2022</option>
+                    <option value="2023">2023</option>
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                </select>
+            </div>
+            
+            <h3>Alle wiederkehrenden Zahlungen</h3>
+            
+            <!-- Filtros -->
+            <div style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+                <select id="filterFrequency" style="padding: 10px; border-radius: 5px; border: 1px solid #bdc3c7;">
+                    <option value="">Alle Häufigkeiten</option>
+                    <option value="weekly">Wöchentlich</option>
+                    <option value="monthly">Monatlich</option>
+                    <option value="quarterly">Vierteljährlich</option>
+                    <option value="yearly">Jährlich</option>
+                    <option value="custom">Benutzerdefiniert</option>
+                </select>
+                
+                <select id="filterCategory" style="padding: 10px; border-radius: 5px; border: 1px solid #bdc3c7;">
+                    <option value="">Alle Kategorien</option>
+                    <option value="rent">Miete</option>
+                    <option value="utilities">Nebenkosten</option>
+                    <option value="insurance">Versicherung</option>
+                    <option value="loan">Kredite/Darlehen</option>
+                    <option value="staff">Personal</option>
+                    <option value="taxes">Steuern</option>
+                    <option value="services">Dienstleistungen</option>
+                    <option value="maintenance">Wartung</option>
+                    <option value="subscriptions">Abonnements</option>
+                    <option value="other">Sonstiges</option>
+                </select>
+                
+                <select id="filterStatus" style="padding: 10px; border-radius: 5px; border: 1px solid #bdc3c7;">
+                    <option value="">Alle Status</option>
+                    <option value="due_soon">Bald fällig</option>
+                    <option value="overdue">Überfällig</option>
+                    <option value="upcoming">Zukünftig</option>
+                </select>
+                
+                <button onclick="clearRecurringFilters()" class="btn" style="margin: 0;">
+                    Filter löschen
+                </button>
+            </div>
+            
+            <div id="recurringList">
+                <p style="text-align: center; color: #7f8c8d; font-style: italic;">
+                    Keine wiederkehrenden Zahlungen gefunden
+                </p>
+            </div>
+        </div>
+
+        <!-- Seção de pagamentos vencidos e próximos -->
+        <div class="card">
+            <h2>Anstehende Zahlungen (nächste 30 Tage)</h2>
+            <div id="upcomingPayments">
+                <p style="text-align: center; color: #7f8c8d; font-style: italic;">
+                    Keine anstehenden Zahlungen
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/eventBus.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        // Inicializar página
+        document.addEventListener('DOMContentLoaded', function() {
+            // CORRIGIDO: Carregar dados ANTES de verificar seleção
+            loadDataFromStorage();
+            
+            checkRestaurantSelection();
+            if (!isRestaurantSelected()) {
+                return;
+            }
+            // updateRestaurantName() removido - esta página não tem elemento #restaurantName
+            initRecurringPage();
+            updateRecurringStats();
+            displayRecurringPayments();
+            displayUpcomingPayments();
+        });
+
+        /**
+         * Inicializa a página de pagamentos recorrentes
+         */
+        function initRecurringPage() {
+            // Definir data padrão como próximo mês
+            const nextMonth = new Date();
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
+            document.getElementById('startDate').valueAsDate = nextMonth;
+            
+            // Event listener para mudança de frequência
+            document.getElementById('frequency').addEventListener('change', function() {
+                toggleCustomDateField(this.value);
+            });
+            
+            // Event listener para formulário
+            document.getElementById('recurringForm').addEventListener('submit', handleRecurringFormSubmit);
+            
+            // Event listeners para filtros
+            document.getElementById('filterFrequency').addEventListener('change', displayRecurringPayments);
+            document.getElementById('filterCategory').addEventListener('change', displayRecurringPayments);
+            document.getElementById('filterStatus').addEventListener('change', displayRecurringPayments);
+        }
+
+        /**
+         * Mostra/esconde campo de data personalizada
+         */
+        function toggleCustomDateField(frequency) {
+            const customDateGroup = document.getElementById('customDateGroup');
+            const customDate = document.getElementById('customDate');
+            
+            if (frequency === 'custom') {
+                customDateGroup.style.display = 'block';
+                customDate.required = true;
+            } else {
+                customDateGroup.style.display = 'none';
+                customDate.required = false;
+                customDate.value = '';
+            }
+        }
+
+        /**
+         * Manipula submissão do formulário
+         */
+        function handleRecurringFormSubmit(e) {
+            e.preventDefault();
+            
+            const formData = {
+                description: document.getElementById('description').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                frequency: document.getElementById('frequency').value,
+                category: document.getElementById('category').value,
+                startDate: document.getElementById('startDate').value
+            };
+
+            if (formData.frequency === 'custom') {
+                formData.customDate = document.getElementById('customDate').value;
+                if (!formData.customDate) {
+                    showNotification('Bitte geben Sie ein Fälligkeitsdatum ein', 'error');
+                    return;
+                }
+            }
+
+            if (formData.amount <= 0) {
+                showNotification('Der Betrag muss größer als 0 sein', 'error');
+                return;
+            }
+
+            // Adicionar pagamento recorrente
+            addRecurringPayment(formData);
+            
+            // Reset formulário
+            document.getElementById('recurringForm').reset();
+            const nextMonth = new Date();
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
+            document.getElementById('startDate').valueAsDate = nextMonth;
+            toggleCustomDateField('');
+            
+            // Atualizar displays
+            updateRecurringStats();
+            displayRecurringPayments();
+            displayUpcomingPayments();
+            
+            showNotification('Wiederkehrende Zahlung erfolgreich hinzugefügt', 'success');
+        }
+
+        /**
+         * Atualiza estatísticas dos pagamentos recorrentes
+         */
+        function updateRecurringStats() {
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData || !restaurantData.recurring) return;
+            
+            const totalRecurring = restaurantData.recurring.length;
+            
+            // Calcular custo mensal total
+            const monthlyTotal = restaurantData.recurring.reduce((sum, payment) => {
+                let monthlyAmount = 0;
+                switch (payment.frequency) {
+                    case 'weekly':
+                        monthlyAmount = payment.amount * 4.33; // média de semanas por mês
+                        break;
+                    case 'monthly':
+                        monthlyAmount = payment.amount;
+                        break;
+                    case 'quarterly':
+                        monthlyAmount = payment.amount / 3;
+                        break;
+                    case 'yearly':
+                        monthlyAmount = payment.amount / 12;
+                        break;
+                    case 'custom':
+                        // Para customizados, assumimos mensal por agora
+                        monthlyAmount = payment.amount;
+                        break;
+                }
+                return sum + monthlyAmount;
+            }, 0);
+            
+            const yearlyTotal = monthlyTotal * 12;
+            
+            // Contar pagamentos vencendo esta semana
+            const today = new Date();
+            const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+            const upcomingDue = restaurantData.recurring.filter(payment => {
+                const nextDue = new Date(payment.nextDue);
+                return nextDue <= nextWeek;
+            }).length;
+
+            document.getElementById('totalRecurring').textContent = totalRecurring;
+            document.getElementById('monthlyTotal').textContent = formatCurrency(monthlyTotal);
+            document.getElementById('yearlyTotal').textContent = formatCurrency(yearlyTotal);
+            document.getElementById('upcomingDue').textContent = upcomingDue;
+        }
+
+        /**
+         * Exibe lista de pagamentos recorrentes
+         */
+        function displayRecurringPayments() {
+            const container = document.getElementById('recurringList');
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData || !restaurantData.recurring) {
+                container.innerHTML = '<p style="text-align: center; color: #7f8c8d; font-style: italic;">Keine Zahlungen gefunden</p>';
+                return;
+            }
+            
+            let payments = [...restaurantData.recurring];
+            
+            // Aplicar filtros
+            const filterFrequency = document.getElementById('filterFrequency').value;
+            const filterCategory = document.getElementById('filterCategory').value;
+            const filterStatus = document.getElementById('filterStatus').value;
+            
+            if (filterFrequency) {
+                payments = payments.filter(p => p.frequency === filterFrequency);
+            }
+            
+            if (filterCategory) {
+                payments = payments.filter(p => p.category === filterCategory);
+            }
+            
+            if (filterStatus) {
+                const today = new Date();
+                const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+                
+                payments = payments.filter(p => {
+                    const nextDue = new Date(p.nextDue);
+                    if (filterStatus === 'due_soon') {
+                        return nextDue <= nextWeek && nextDue >= today;
+                    } else if (filterStatus === 'overdue') {
+                        return nextDue < today;
+                    } else if (filterStatus === 'upcoming') {
+                        return nextDue > nextWeek;
+                    }
+                    return true;
+                });
+            }
+            
+            // Ordenar por próxima data de vencimento
+            payments.sort((a, b) => new Date(a.nextDue) - new Date(b.nextDue));
+            
+            if (payments.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #7f8c8d; font-style: italic;">Keine Zahlungen gefunden</p>';
+                return;
+            }
+
+            const categoryLabels = {
+                'rent': 'Miete',
+                'utilities': 'Nebenkosten',
+                'insurance': 'Versicherung',
+                'loan': 'Kredite/Darlehen',
+                'staff': 'Personal',
+                'taxes': 'Steuern',
+                'services': 'Dienstleistungen',
+                'maintenance': 'Wartung',
+                'subscriptions': 'Abonnements',
+                'other': 'Sonstiges'
+            };
+
+            const frequencyLabels = {
+                'weekly': 'Wöchentlich',
+                'monthly': 'Monatlich',
+                'quarterly': 'Vierteljährlich',
+                'yearly': 'Jährlich',
+                'custom': 'Benutzerdefiniert'
+            };
+
+            container.innerHTML = payments
+                .map(payment => {
+                    const today = new Date();
+                    const nextDue = new Date(payment.nextDue);
+                    const daysUntilDue = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
+                    
+                    let statusColor = '#3498db';
+                    let statusText = 'Zukünftig';
+                    
+                    if (daysUntilDue < 0) {
+                        statusColor = '#e74c3c';
+                        statusText = 'Überfällig';
+                    } else if (daysUntilDue <= 7) {
+                        statusColor = '#f39c12';
+                        statusText = 'Bald fällig';
+                    }
+                    
+                    return `
+                        <div class="item" style="border-left-color: ${statusColor};">
+                            <div class="item-info">
+                                <h4>${payment.description}</h4>
+                                <p><strong>Kategorie:</strong> ${categoryLabels[payment.category] || payment.category}</p>
+                                <p><strong>Häufigkeit:</strong> ${frequencyLabels[payment.frequency]}</p>
+                                <p><strong>Nächste Fälligkeit:</strong> ${formatDate(payment.nextDue)}</p>
+                                <p><strong>Status:</strong> <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></p>
+                                ${daysUntilDue >= 0 ? `<p><strong>In ${daysUntilDue} Tagen fällig</strong></p>` : `<p><strong>${Math.abs(daysUntilDue)} Tage überfällig</strong></p>`}
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 1.3em; font-weight: bold; color: #e74c3c; margin-bottom: 10px;">
+                                    ${formatCurrency(payment.amount)}
+                                </div>
+                                <div class="item-actions">
+                                    <button class="btn btn-success" onclick="markAsPaid('${payment.id}')">
+                                        <span class="icon icon-money"></span>
+                                        Als bezahlt markieren
+                                    </button>
+                                    <button class="btn btn-danger" onclick="deleteRecurringPayment('${payment.id}')">
+                                        <span class="icon icon-delete"></span>
+                                        Löschen
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                })
+                .join('');
+        }
+
+        /**
+         * Exibe próximos pagamentos
+         */
+        function displayUpcomingPayments() {
+            const container = document.getElementById('upcomingPayments');
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData || !restaurantData.recurring) {
+                container.innerHTML = '<p style="text-align: center; color: #7f8c8d; font-style: italic;">Keine anstehenden Zahlungen</p>';
+                return;
+            }
+            
+            const today = new Date();
+            const next30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+            const upcomingPayments = restaurantData.recurring
+                .filter(payment => {
+                    const nextDue = new Date(payment.nextDue);
+                    return nextDue <= next30Days;
+                })
+                .sort((a, b) => new Date(a.nextDue) - new Date(b.nextDue));
+
+            if (upcomingPayments.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #7f8c8d; font-style: italic;">Keine anstehenden Zahlungen</p>';
+                return;
+            }
+
+            const totalUpcomingAmount = upcomingPayments.reduce((sum, p) => sum + p.amount, 0);
+
+            container.innerHTML = `
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="color: #2c3e50; margin-bottom: 10px;">Gesamtbetrag der nächsten 30 Tage: ${formatCurrency(totalUpcomingAmount)}</h4>
+                </div>
+                ${upcomingPayments
+                    .map(payment => {
+                        const daysUntilDue = Math.ceil((new Date(payment.nextDue) - today) / (1000 * 60 * 60 * 24));
+                        const urgencyColor = daysUntilDue <= 2 ? '#e74c3c' : daysUntilDue <= 7 ? '#f39c12' : '#3498db';
+                        
+                        return `
+                            <div class="item" style="border-left-color: ${urgencyColor};">
+                                <div class="item-info">
+                                    <h4>${payment.description}</h4>
+                                    <p>Fällig: ${formatDate(payment.nextDue)}</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 1.2em; font-weight: bold; color: #e74c3c;">
+                                        ${formatCurrency(payment.amount)}
+                                    </div>
+                                    <div style="font-size: 0.9em; color: ${urgencyColor};">
+                                        ${daysUntilDue === 0 ? 'Heute fällig!' : 
+                                          daysUntilDue === 1 ? 'Morgen fällig' : 
+                                          daysUntilDue < 0 ? `${Math.abs(daysUntilDue)} Tage überfällig` :
+                                          `In ${daysUntilDue} Tagen`}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    })
+                    .join('')}
+            `;
+        }
+
+        /**
+         * Marca pagamento como pago
+         */
+        function markAsPaid(id) {
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData || !restaurantData.recurring) return;
+            
+            const payment = restaurantData.recurring.find(p => p.id === id);
+            if (!payment) return;
+            
+            if (confirm(`"${payment.description}" als bezahlt markieren und zum Kassenfluss hinzufügen?`)) {
+                // Adicionar ao cashflow
+                addCashflowEntry({
+                    type: 'expense',
+                    description: `${payment.description} (wiederkehrend)`,
+                    amount: payment.amount,
+                    category: payment.category,
+                    date: new Date().toISOString().split('T')[0]
+                });
+                
+                // Atualizar próxima data de vencimento
+                const nextDue = calculateNextDue(payment);
+                updateRecurringPayment(id, { nextDue: nextDue });
+                
+                updateRecurringStats();
+                displayRecurringPayments();
+                displayUpcomingPayments();
+                
+                showNotification('Zahlung als bezahlt markiert und zum Kassenfluss hinzugefügt', 'success');
+            }
+        }
+
+        /**
+         * Atualiza pagamento recorrente
+         */
+        function updateRecurringPayment(id, updates) {
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData || !restaurantData.recurring) return;
+            
+            const index = restaurantData.recurring.findIndex(p => p.id === id);
+            if (index !== -1) {
+                restaurantData.recurring[index] = { ...restaurantData.recurring[index], ...updates };
+                saveDataToStorage();
+            }
+        }
+
+        /**
+         * Deleta pagamento recorrente
+         */
+        function deleteRecurringPayment(id) {
+            const restaurantData = getCurrentRestaurantData();
+            if (!restaurantData || !restaurantData.recurring) return;
+            
+            const payment = restaurantData.recurring.find(p => p.id === id);
+            if (!payment) return;
+            
+            if (confirm(`Sind Sie sicher, dass Sie "${payment.description}" löschen möchten?`)) {
+                removeRecurringPayment(id);
+                updateRecurringStats();
+                displayRecurringPayments();
+                displayUpcomingPayments();
+                showNotification('Wiederkehrende Zahlung erfolgreich gelöscht', 'success');
+            }
+        }
+
+        /**
+         * Limpa filtros
+         */
+        function clearRecurringFilters() {
+            document.getElementById('filterFrequency').value = '';
+            document.getElementById('filterCategory').value = '';
+            document.getElementById('filterStatus').value = '';
+            displayRecurringPayments();
+        }
+
+        // ====== NAVEGAÇÃO DE MÊS PARA PAGAMENTOS RECORRENTES ======
+        
+        let currentRecurringDate = new Date();
+        const monthNamesGermanRecurring = [
+            'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+            'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+        ];
+
+        /**
+         * Mês anterior nos pagamentos recorrentes
+         */
+        function previousMonthRecurring() {
+            currentRecurringDate.setMonth(currentRecurringDate.getMonth() - 1);
+            updateRecurringMonth();
+        }
+
+        /**
+         * Próximo mês nos pagamentos recorrentes
+         */
+        function nextMonthRecurring() {
+            currentRecurringDate.setMonth(currentRecurringDate.getMonth() + 1);
+            updateRecurringMonth();
+        }
+
+        /**
+         * Mudança de mês via seletores
+         */
+        function changeMonthRecurring() {
+            const monthSelect = document.getElementById('recurringMonthSelect');
+            const yearSelect = document.getElementById('recurringYearSelect');
+            
+            const selectedMonth = parseInt(monthSelect.value);
+            const selectedYear = parseInt(yearSelect.value);
+            
+            currentRecurringDate.setMonth(selectedMonth);
+            currentRecurringDate.setFullYear(selectedYear);
+            
+            updateRecurringMonth();
+        }
+
+        /**
+         * Atualiza a exibição do mês nos pagamentos recorrentes
+         */
+        function updateRecurringMonth() {
+            const year = currentRecurringDate.getFullYear();
+            const month = currentRecurringDate.getMonth();
+            
+            // Atualizar display do mês
+            const currentMonthName = document.getElementById('currentMonthNameRecurring');
+            if (currentMonthName) {
+                currentMonthName.textContent = `${monthNamesGermanRecurring[month]} ${year}`;
+            }
+            
+            // Sincronizar seletores
+            updateRecurringMonthYearSelectors();
+            
+            // Atualizar exibições baseadas no mês selecionado
+            displayRecurringPayments();
+            displayUpcomingPayments();
+            updateRecurringStats();
+        }
+
+        /**
+         * Sincroniza os seletores com a data atual
+         */
+        function updateRecurringMonthYearSelectors() {
+            const monthSelect = document.getElementById('recurringMonthSelect');
+            const yearSelect = document.getElementById('recurringYearSelect');
+            
+            if (monthSelect && yearSelect) {
+                monthSelect.value = currentRecurringDate.getMonth();
+                yearSelect.value = currentRecurringDate.getFullYear();
+            }
+        }
+
+        // Inicializar navegação de mês quando a página carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                updateRecurringMonth();
+            }, 200);
+        });
+    </script>
+</body>
+</html> 
