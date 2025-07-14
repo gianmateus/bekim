@@ -90,6 +90,45 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
         }
 
+        /* Estilos para modal da tabela */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal .modal-content {
+            background-color: white;
+            margin: 2% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 95%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
         .modal-header {
             text-align: center;
             margin-bottom: 30px;
@@ -515,6 +554,10 @@
                 <span class="icon">❌</span>
                 Ausgabe hinzufügen
             </button>
+            <button class="action-btn" onclick="showFinancialTableModal()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <span class="icon">📊</span>
+                Tabelle anzeigen
+            </button>
         </div>
 
         <!-- Resumo financeiro -->
@@ -619,12 +662,7 @@
                 
                 <select id="filterCategory" style="padding: 10px; border-radius: 8px; border: 2px solid #bdc3c7;">
                     <option value="">Alle Kategorien</option>
-                    <option value="verkauf">Verkauf</option>
-                    <option value="trinkgeld">Trinkgeld</option>
-                    <option value="einkauf">Einkauf</option>
-                    <option value="miete">Miete</option>
-                    <option value="strom">Strom</option>
-                    <option value="sonstiges">Sonstiges</option>
+                    <!-- Dynamisch befüllt mit allen verfügbaren Kategorien -->
                 </select>
                 
                 <input type="month" id="filterMonth" style="display: none;">
@@ -686,12 +724,7 @@
                         <label for="kategorie">📂 Kategorie:</label>
                         <select id="kategorie" required>
                             <option value="">Bitte auswählen...</option>
-                            <option value="verkauf">Verkauf</option>
-                            <option value="trinkgeld">Trinkgeld</option>
-                            <option value="einkauf">Einkauf</option>
-                            <option value="miete">Miete</option>
-                            <option value="strom">Strom</option>
-                            <option value="sonstiges">Sonstiges</option>
+                            <!-- Dynamisch befüllt basierend auf Transaktionstyp -->
                         </select>
                     </div>
                     
@@ -711,6 +744,63 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal da Tabela Visual -->
+    <div id="financialTableModal" class="modal">
+        <div class="modal-content" style="max-width: 90%; max-height: 90%; overflow-y: auto;">
+            <h3 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">
+                📊 Detaillierte Finanz-Tabelle
+            </h3>
+            
+            <!-- Controles da tabela -->
+            <div style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: center;">
+                <div>
+                    <label for="tableViewType" style="font-weight: bold;">Ansicht:</label>
+                    <select id="tableViewType" onchange="updateFinancialTable()" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                        <option value="daily">Nach Tagen</option>
+                        <option value="weekly">Nach Wochen</option>
+                        <option value="monthly">Nach Monaten</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="tableDateRange" style="font-weight: bold;">Zeitraum:</label>
+                    <select id="tableDateRange" onchange="updateFinancialTable()" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                        <option value="current_month">Aktueller Monat</option>
+                        <option value="last_3_months">Letzte 3 Monate</option>
+                        <option value="last_6_months">Letzte 6 Monate</option>
+                        <option value="current_year">Aktuelles Jahr</option>
+                        <option value="all">Alle Daten</option>
+                    </select>
+                </div>
+                <button onclick="exportTableToCSV()" class="btn" style="background: #27ae60;">
+                    📋 CSV Export
+                </button>
+            </div>
+
+            <!-- Resumo da tabela -->
+            <div id="tableSummary" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                <!-- Preenchido dinamicamente -->
+            </div>
+
+            <!-- Tabela -->
+            <div style="overflow-x: auto;">
+                <table id="financialTable" style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <thead style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <!-- Preenchido dinamicamente -->
+                    </thead>
+                    <tbody>
+                        <!-- Preenchido dinamicamente -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="closeFinancialTableModal()" class="btn">
+                    Schließen
+                </button>
+            </div>
         </div>
     </div>
 
@@ -812,6 +902,10 @@
             // Reset form
             document.getElementById('transactionForm').reset();
             document.getElementById('editingId').value = '';
+            
+            // IMPORTANTE: Carregar categorias para o tipo selecionado
+            console.log('[DEBUG] Carregando categorias para tipo:', type);
+            populateCategorySelect(type);
             
             modal.style.display = 'flex';
         }
@@ -956,15 +1050,6 @@
                 return;
             }
 
-            const categoryLabels = {
-                'verkauf': '💰 Verkauf',
-                'trinkgeld': '🪙 Trinkgeld',
-                'einkauf': '🛒 Einkauf',
-                'miete': '🏠 Miete',
-                'strom': '⚡ Strom',
-                'sonstiges': '📋 Sonstiges'
-            };
-
             container.innerHTML = transactions
                 .map(transaction => `
                     <div class="transaction-item ${transaction.typ}">
@@ -973,7 +1058,7 @@
                             <div class="transaction-meta">
                                 <span>📅 ${formatDate(transaction.datum)}</span>
                                 <span style="margin-left: 15px;">
-                                    ${categoryLabels[transaction.kategorie] || transaction.kategorie}
+                                    ${getFinancialCategoryLabel(transaction.kategorie, transaction.typ)}
                                 </span>
                                 ${transaction.rechnung ? `<span style="margin-left: 15px;">🧾 ${transaction.rechnung}</span>` : ''}
                             </div>
@@ -1144,6 +1229,649 @@
             if (monthSelect && yearSelect) {
                 monthSelect.value = currentFinanceDate.getMonth();
                 yearSelect.value = currentFinanceDate.getFullYear();
+            }
+        }
+
+        // ====== CATEGORIAS CUSTOMIZADAS PARA FINANZEN ======
+
+        /**
+         * Popula select de categoria baseado no tipo de transação
+         */
+        function populateCategorySelect(type) {
+            const categorySelect = document.getElementById('kategorie');
+            if (!categorySelect) return;
+
+            const subtype = type === 'einnahme' ? 'income' : 'expense';
+            
+            // Tentar usar sistema principal primeiro
+            let categories = [];
+            if (typeof getAllCategories !== 'undefined') {
+                try {
+                    categories = getAllCategories('financial', subtype);
+                } catch(error) {
+                    console.log('[FALLBACK] Erro getAllCategories, usando fallback:', error.message);
+                }
+            }
+            
+            // Se não funcionou, usar fallback
+            if (categories.length === 0) {
+                categories = getFallbackCategories(subtype);
+            }
+            
+            categorySelect.innerHTML = '<option value="">Bitte auswählen...</option>';
+            
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.value;
+                option.textContent = category.label;
+                categorySelect.appendChild(option);
+            });
+        }
+
+        /**
+         * Popula filtro de categorias com todas as categorias disponíveis
+         */
+        function populateFilterCategories() {
+            const filterSelect = document.getElementById('filterCategory');
+            if (!filterSelect) return;
+
+            // Obter todas as categorias de income e expense
+            let incomeCategories = [];
+            let expenseCategories = [];
+            
+            if (typeof getAllCategories !== 'undefined') {
+                try {
+                    incomeCategories = getAllCategories('financial', 'income');
+                    expenseCategories = getAllCategories('financial', 'expense');
+                } catch(error) {
+                    console.log('[FALLBACK] Erro getAllCategories no filtro, usando fallback:', error.message);
+                }
+            }
+            
+            // Se não funcionou, usar fallback
+            if (incomeCategories.length === 0 && expenseCategories.length === 0) {
+                incomeCategories = getFallbackCategories('income');
+                expenseCategories = getFallbackCategories('expense');
+            }
+            
+            const allCategories = [...incomeCategories, ...expenseCategories];
+            
+            // Remover duplicatas baseado no value
+            const uniqueCategories = allCategories.filter((category, index, self) => 
+                index === self.findIndex(c => c.value === category.value)
+            );
+
+            filterSelect.innerHTML = '<option value="">Alle Kategorien</option>';
+            
+            uniqueCategories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.value;
+                option.textContent = category.label;
+                filterSelect.appendChild(option);
+            });
+        }
+
+        /**
+         * Obtém label da categoria para exibição
+         */
+        function getFinancialCategoryLabel(value, type) {
+            const subtype = type === 'einnahme' ? 'income' : 'expense';
+            
+            // Tentar usar sistema principal primeiro
+            if (typeof getCategoryLabel !== 'undefined') {
+                try {
+                    return getCategoryLabel('financial', value, subtype);
+                } catch(error) {
+                    console.log('[FALLBACK] Erro getCategoryLabel, usando fallback:', error.message);
+                }
+            }
+            
+            // Fallback
+            return getFallbackCategoryLabel(value, subtype);
+        }
+
+        /**
+         * FALLBACK: Obtém categorias do localStorage quando main.js não funciona
+         */
+        function getFallbackCategories(subtype) {
+            // Categorias padrão
+            const defaultCategories = {
+                income: [
+                    { value: 'food_sales', label: 'Verkauf Speisen' },
+                    { value: 'drink_sales', label: 'Verkauf Getränke' },
+                    { value: 'catering', label: 'Catering' },
+                    { value: 'events', label: 'Events' }
+                ],
+                expense: [
+                    { value: 'ingredients', label: 'Zutaten' },
+                    { value: 'rent', label: 'Miete' },
+                    { value: 'utilities', label: 'Nebenkosten' },
+                    { value: 'equipment', label: 'Ausstattung' },
+                    { value: 'staff', label: 'Personal' },
+                    { value: 'maintenance', label: 'Wartung' }
+                ]
+            };
+            
+            // Categorias customizadas do settings
+            let customCategories = [];
+            try {
+                const stored = localStorage.getItem('custom_categories_fallback');
+                if (stored) {
+                    const categories = JSON.parse(stored);
+                    if (categories.financial && categories.financial[subtype]) {
+                        customCategories = categories.financial[subtype];
+                    }
+                }
+            } catch(e) {
+                console.log('[FALLBACK] Erro ao carregar categorias customizadas:', e.message);
+            }
+            
+            // Combinar padrão + customizadas
+            const defaultCats = defaultCategories[subtype] || [];
+            return [...defaultCats, ...customCategories];
+        }
+
+        /**
+         * FALLBACK: Obtém label da categoria quando main.js não funciona
+         */
+        function getFallbackCategoryLabel(value, subtype) {
+            const categories = getFallbackCategories(subtype);
+            const category = categories.find(cat => cat.value === value);
+            return category ? category.label : value;
+        }
+
+        /**
+         * Atualiza os labels das categorias na exibição das transações
+         */
+        function updateCategoryLabelsInDisplay() {
+            // Esta função será chamada quando categorias mudarem
+            displayTransactions();
+        }
+
+        // Adicionar listener para mudanças de tipo de transação
+        document.addEventListener('DOMContentLoaded', function() {
+            const tipoSelect = document.getElementById('tipo');
+            if (tipoSelect) {
+                tipoSelect.addEventListener('change', function() {
+                    console.log('[DEBUG] Tipo mudou para:', this.value);
+                    populateCategorySelect(this.value);
+                });
+            } else {
+                console.log('[DEBUG] Elemento #tipo não encontrado');
+            }
+
+            // Popular filtro de categorias na inicialização - com fallback
+            setTimeout(() => {
+                console.log('[DEBUG] Inicializando categorias no konten.html');
+                populateFilterCategories();
+                
+                // Se há tipo selecionado, popular categorias
+                const currentType = tipoSelect ? tipoSelect.value : '';
+                if (currentType) {
+                    populateCategorySelect(currentType);
+                }
+            }, 200);
+        });
+
+        // EventBus listener para atualizações de categoria
+        if (typeof eventBus !== 'undefined') {
+            eventBus.on(EVENTS.DATA_CHANGED, (data) => {
+                if (data.type === 'category_added' || data.type === 'category_removed') {
+                    populateFilterCategories();
+                    updateCategoryLabelsInDisplay();
+                }
+            });
+        }
+
+        // ====== TABELA VISUAL DE FINANÇAS ======
+
+        /**
+         * Mostra modal da tabela visual
+         */
+        function showFinancialTableModal() {
+            console.log('[DEBUG] showFinancialTableModal chamada');
+            
+            try {
+                const modal = document.getElementById('financialTableModal');
+                if (!modal) {
+                    console.error('[DEBUG] Modal financialTableModal não encontrado');
+                    alert('Erro: Modal da tabela não encontrado');
+                    return;
+                }
+                
+                console.log('[DEBUG] Abrindo modal da tabela');
+                modal.style.display = 'block';
+                
+                console.log('[DEBUG] Chamando updateFinancialTable');
+                updateFinancialTable();
+                
+            } catch(error) {
+                console.error('[DEBUG] Erro em showFinancialTableModal:', error);
+                alert('Erro ao abrir tabela: ' + error.message);
+            }
+        }
+
+        /**
+         * Fecha modal da tabela visual
+         */
+        function closeFinancialTableModal() {
+            console.log('[DEBUG] Fechando modal da tabela');
+            const modal = document.getElementById('financialTableModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Fechar modal clicando fora dele
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('financialTableModal');
+            if (modal) {
+                modal.addEventListener('click', function(event) {
+                    if (event.target === modal) {
+                        closeFinancialTableModal();
+                    }
+                });
+            }
+        });
+
+        /**
+         * Atualiza a tabela financeira
+         */
+        function updateFinancialTable() {
+            console.log('[DEBUG] updateFinancialTable chamada');
+            
+            try {
+                const viewType = document.getElementById('tableViewType').value;
+                const dateRange = document.getElementById('tableDateRange').value;
+                console.log('[DEBUG] ViewType:', viewType, 'DateRange:', dateRange);
+                
+                // Tentar obter dados do restaurante
+                let restaurantData = null;
+                if (typeof getCurrentRestaurantData !== 'undefined') {
+                    try {
+                        restaurantData = getCurrentRestaurantData();
+                        console.log('[DEBUG] Dados do restaurante obtidos via getCurrentRestaurantData');
+                    } catch(error) {
+                        console.log('[DEBUG] Erro getCurrentRestaurantData:', error.message);
+                    }
+                }
+                
+                // FALLBACK: Se não conseguiu dados, usar fallback
+                if (!restaurantData || !restaurantData.cashflow) {
+                    console.log('[DEBUG] Usando fallback para dados do restaurante');
+                    restaurantData = getFallbackRestaurantData();
+                }
+                
+                if (!restaurantData || !restaurantData.cashflow) {
+                    console.log('[DEBUG] Nenhum dado disponível');
+                    document.getElementById('financialTable').innerHTML = 
+                        '<tr><td colspan="5" style="text-align: center; padding: 20px;">Keine Daten verfügbar</td></tr>';
+                    document.getElementById('tableSummary').innerHTML = 
+                        '<div style="text-align: center; padding: 20px;">Keine Transaktionen gefunden</div>';
+                    return;
+                }
+
+                console.log('[DEBUG] Dados encontrados:', restaurantData.cashflow.length, 'transações');
+
+                // Filtrar dados por período
+                const filteredData = filterDataByDateRange(restaurantData.cashflow, dateRange);
+                console.log('[DEBUG] Dados filtrados:', filteredData.length, 'transações');
+                
+                // Agrupar dados
+                const groupedData = groupDataByViewType(filteredData, viewType);
+                console.log('[DEBUG] Dados agrupados:', Object.keys(groupedData).length, 'grupos');
+                
+                // Atualizar resumo
+                updateTableSummary(filteredData);
+                
+                // Renderizar tabela
+                renderFinancialTable(groupedData, viewType);
+                
+                console.log('[DEBUG] Tabela atualizada com sucesso');
+                
+            } catch(error) {
+                console.error('[DEBUG] Erro em updateFinancialTable:', error);
+                alert('Erro ao atualizar tabela: ' + error.message);
+            }
+        }
+
+        /**
+         * FALLBACK: Obtém dados do restaurante quando main.js não funciona
+         */
+        function getFallbackRestaurantData() {
+            console.log('[FALLBACK] Tentando obter dados do localStorage');
+            
+            try {
+                // Tentar obter dados do localStorage
+                const storedData = localStorage.getItem('restaurant_data');
+                if (storedData) {
+                    const data = JSON.parse(storedData);
+                    
+                    // Verificar se há restaurante selecionado
+                    const currentRestaurant = localStorage.getItem('current_restaurant') || 'cantinetta';
+                    
+                    if (data[currentRestaurant]) {
+                        console.log('[FALLBACK] Dados encontrados para:', currentRestaurant);
+                        return data[currentRestaurant];
+                    }
+                }
+                
+                // Se não há dados, retornar estrutura vazia
+                console.log('[FALLBACK] Nenhum dado encontrado, retornando estrutura vazia');
+                return {
+                    cashflow: []
+                };
+                
+            } catch(error) {
+                console.log('[FALLBACK] Erro ao obter dados:', error.message);
+                return {
+                    cashflow: []
+                };
+            }
+        }
+
+        /**
+         * Filtra dados por período
+         */
+        function filterDataByDateRange(data, range) {
+            const today = new Date();
+            const startDate = new Date();
+
+            switch (range) {
+                case 'current_month':
+                    startDate.setDate(1);
+                    break;
+                case 'last_3_months':
+                    startDate.setMonth(today.getMonth() - 3);
+                    break;
+                case 'last_6_months':
+                    startDate.setMonth(today.getMonth() - 6);
+                    break;
+                case 'current_year':
+                    startDate.setMonth(0);
+                    startDate.setDate(1);
+                    break;
+                case 'all':
+                    return data;
+            }
+
+            return data.filter(transaction => {
+                const transactionDate = new Date(transaction.datum);
+                return transactionDate >= startDate && transactionDate <= today;
+            });
+        }
+
+        /**
+         * Agrupa dados por tipo de visualização
+         */
+        function groupDataByViewType(data, viewType) {
+            const grouped = {};
+
+            data.forEach(transaction => {
+                let key;
+                const date = new Date(transaction.datum);
+
+                switch (viewType) {
+                    case 'daily':
+                        key = transaction.datum;
+                        break;
+                    case 'weekly':
+                        // Início da semana (segunda-feira)
+                        const weekStart = new Date(date);
+                        const day = weekStart.getDay();
+                        const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
+                        weekStart.setDate(diff);
+                        key = weekStart.toISOString().split('T')[0];
+                        break;
+                    case 'monthly':
+                        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                        break;
+                }
+
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        date: key,
+                        income: 0,
+                        expense: 0,
+                        transactions: []
+                    };
+                }
+
+                if (transaction.typ === 'einnahme') {
+                    grouped[key].income += parseFloat(transaction.betrag);
+                } else {
+                    grouped[key].expense += parseFloat(transaction.betrag);
+                }
+
+                grouped[key].transactions.push(transaction);
+            });
+
+            return Object.values(grouped).sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
+
+        /**
+         * Atualiza resumo da tabela
+         */
+        function updateTableSummary(data) {
+            const totalIncome = data.filter(t => t.typ === 'einnahme').reduce((sum, t) => sum + parseFloat(t.betrag), 0);
+            const totalExpense = data.filter(t => t.typ === 'ausgabe').reduce((sum, t) => sum + parseFloat(t.betrag), 0);
+            const balance = totalIncome - totalExpense;
+            const transactionCount = data.length;
+
+            document.getElementById('tableSummary').innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                    <div>
+                        <strong style="color: #27ae60;">Gesamteinnahmen</strong><br>
+                        <span style="font-size: 1.2em;">${safeFunctionCall('formatCurrency', totalIncome)}</span>
+                    </div>
+                    <div>
+                        <strong style="color: #e74c3c;">Gesamtausgaben</strong><br>
+                        <span style="font-size: 1.2em;">${safeFunctionCall('formatCurrency', totalExpense)}</span>
+                    </div>
+                    <div>
+                        <strong style="color: ${balance >= 0 ? '#27ae60' : '#e74c3c'};">Saldo</strong><br>
+                        <span style="font-size: 1.2em;">${safeFunctionCall('formatCurrency', balance)}</span>
+                    </div>
+                    <div>
+                        <strong style="color: #3498db;">Transaktionen</strong><br>
+                        <span style="font-size: 1.2em;">${transactionCount}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * Chama função de forma segura com fallback
+         */
+        function safeFunctionCall(functionName, ...args) {
+            if (typeof window[functionName] !== 'undefined') {
+                try {
+                    return window[functionName](...args);
+                } catch(error) {
+                    console.log(`[FALLBACK] Erro ${functionName}:`, error.message);
+                }
+            }
+            
+            // Fallbacks específicos
+            switch(functionName) {
+                case 'formatCurrency':
+                    return fallbackFormatCurrency(args[0]);
+                case 'formatDate':
+                    return fallbackFormatDate(args[0]);
+                case 'showNotification':
+                    return fallbackShowNotification(args[0], args[1]);
+                default:
+                    return args[0];
+            }
+        }
+
+        /**
+         * FALLBACK: Formata moeda quando main.js não funciona
+         */
+        function fallbackFormatCurrency(value) {
+            if (value === null || value === undefined || isNaN(value)) return '€ 0,00';
+            return `€ ${parseFloat(value).toFixed(2).replace('.', ',')}`;
+        }
+
+        /**
+         * FALLBACK: Formata data quando main.js não funciona
+         */
+        function fallbackFormatDate(dateString) {
+            if (!dateString) return '';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('de-DE');
+            } catch(error) {
+                return dateString;
+            }
+        }
+
+        /**
+         * FALLBACK: Mostra notificação quando main.js não funciona
+         */
+        function fallbackShowNotification(message, type = 'info') {
+            console.log(`[NOTIFICATION ${type.toUpperCase()}] ${message}`);
+            
+            // Mostrar alert simples como fallback
+            if (type === 'success') {
+                alert('✅ ' + message);
+            } else if (type === 'error') {
+                alert('❌ ' + message);
+            } else if (type === 'warning') {
+                alert('⚠️ ' + message);
+            } else {
+                alert('ℹ️ ' + message);
+            }
+        }
+
+        /**
+         * Renderiza a tabela financeira
+         */
+        function renderFinancialTable(groupedData, viewType) {
+            const table = document.getElementById('financialTable');
+            
+            // Header
+            let headerLabel = 'Datum';
+            if (viewType === 'weekly') headerLabel = 'Woche';
+            if (viewType === 'monthly') headerLabel = 'Monat';
+
+            table.innerHTML = `
+                <thead style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <tr>
+                        <th style="padding: 15px; text-align: left;">${headerLabel}</th>
+                        <th style="padding: 15px; text-align: right;">Einnahmen</th>
+                        <th style="padding: 15px; text-align: right;">Ausgaben</th>
+                        <th style="padding: 15px; text-align: right;">Saldo</th>
+                        <th style="padding: 15px; text-align: center;">Transaktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${groupedData.map((row, index) => {
+                        const balance = row.income - row.expense;
+                        const backgroundColor = index % 2 === 0 ? '#f8f9fa' : 'white';
+                        
+                        let dateDisplay = row.date;
+                        if (viewType === 'weekly') {
+                            const endDate = new Date(new Date(row.date).getTime() + 6 * 24 * 60 * 60 * 1000);
+                            dateDisplay = `${safeFunctionCall('formatDate', row.date)} - ${safeFunctionCall('formatDate', endDate.toISOString().split('T')[0])}`;
+                        } else if (viewType === 'monthly') {
+                            const [year, month] = row.date.split('-');
+                            const monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+                            dateDisplay = `${monthNames[parseInt(month) - 1]} ${year}`;
+                        } else {
+                            dateDisplay = safeFunctionCall('formatDate', row.date);
+                        }
+
+                        return `
+                            <tr style="background: ${backgroundColor}; border-bottom: 1px solid #e1e8ed;">
+                                <td style="padding: 12px; font-weight: 600;">${dateDisplay}</td>
+                                <td style="padding: 12px; text-align: right; color: #27ae60; font-weight: 600;">
+                                    ${row.income > 0 ? safeFunctionCall('formatCurrency', row.income) : '-'}
+                                </td>
+                                <td style="padding: 12px; text-align: right; color: #e74c3c; font-weight: 600;">
+                                    ${row.expense > 0 ? safeFunctionCall('formatCurrency', row.expense) : '-'}
+                                </td>
+                                <td style="padding: 12px; text-align: right; font-weight: 600; color: ${balance >= 0 ? '#27ae60' : '#e74c3c'};">
+                                    ${safeFunctionCall('formatCurrency', balance)}
+                                </td>
+                                <td style="padding: 12px; text-align: center;">
+                                    <span style="background: #3498db; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.9em;">
+                                        ${row.transactions.length}
+                                    </span>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            `;
+        }
+
+        /**
+         * Exporta tabela para CSV
+         */
+        function exportTableToCSV() {
+            console.log('[DEBUG] exportTableToCSV chamada');
+            
+            try {
+                const viewType = document.getElementById('tableViewType').value;
+                const dateRange = document.getElementById('tableDateRange').value;
+                
+                // Obter dados com fallback
+                let restaurantData = null;
+                if (typeof getCurrentRestaurantData !== 'undefined') {
+                    try {
+                        restaurantData = getCurrentRestaurantData();
+                    } catch(error) {
+                        console.log('[DEBUG] Erro getCurrentRestaurantData no export:', error.message);
+                    }
+                }
+                
+                if (!restaurantData || !restaurantData.cashflow) {
+                    restaurantData = getFallbackRestaurantData();
+                }
+                
+                if (!restaurantData || !restaurantData.cashflow) {
+                    alert('Keine Daten zum Exportieren verfügbar');
+                    return;
+                }
+
+                const filteredData = filterDataByDateRange(restaurantData.cashflow, dateRange);
+                const groupedData = groupDataByViewType(filteredData, viewType);
+
+                let csv = 'Datum,Einnahmen,Ausgaben,Saldo,Transaktionen\n';
+                
+                groupedData.forEach(row => {
+                    const balance = row.income - row.expense;
+                    let dateDisplay = row.date;
+                    
+                    if (viewType === 'weekly') {
+                        const endDate = new Date(new Date(row.date).getTime() + 6 * 24 * 60 * 60 * 1000);
+                        dateDisplay = `${row.date} bis ${endDate.toISOString().split('T')[0]}`;
+                    } else if (viewType === 'monthly') {
+                        const [year, month] = row.date.split('-');
+                        dateDisplay = `${month}/${year}`;
+                    }
+
+                    csv += `"${dateDisplay}",${row.income.toFixed(2)},${row.expense.toFixed(2)},${balance.toFixed(2)},${row.transactions.length}\n`;
+                });
+
+                // Download
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `finanz_tabelle_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Notificação com fallback
+                safeFunctionCall('showNotification', 'CSV-Datei erfolgreich heruntergeladen', 'success');
+                
+            } catch(error) {
+                console.error('[DEBUG] Erro em exportTableToCSV:', error);
+                alert('Fehler beim Exportieren: ' + error.message);
             }
         }
 

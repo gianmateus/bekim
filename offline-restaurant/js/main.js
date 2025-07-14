@@ -12,6 +12,17 @@ let appData = {
         shopping: [],
         employees: [],
         preparations: [],
+        recurring: [],
+        customCategories: {
+            financial: {
+                income: [], // Categorias de receitas customizadas
+                expense: [] // Categorias de despesas customizadas
+            },
+            recurring: [], // Categorias de pagamentos recorrentes customizadas
+            inventory: [], // Categorias de produtos customizadas
+            preparations: [], // Categorias de preparações customizadas
+            employeeRoles: [] // Roles de funcionários customizados
+        },
         settings: {
             restaurantName: 'Cantinetta',
             currency: '€'
@@ -24,6 +35,17 @@ let appData = {
         shopping: [],
         employees: [],
         preparations: [],
+        recurring: [],
+        customCategories: {
+            financial: {
+                income: [],
+                expense: []
+            },
+            recurring: [],
+            inventory: [],
+            preparations: [],
+            employeeRoles: []
+        },
         settings: {
             restaurantName: 'The Pasta Room',
             currency: '€'
@@ -36,6 +58,17 @@ let appData = {
         shopping: [],
         employees: [],
         preparations: [],
+        recurring: [],
+        customCategories: {
+            financial: {
+                income: [],
+                expense: []
+            },
+            recurring: [],
+            inventory: [],
+            preparations: [],
+            employeeRoles: []
+        },
         settings: {
             restaurantName: 'Panuozzo',
             currency: '€'
@@ -1365,6 +1398,255 @@ function quickSave() {
  */
 function ensureRestaurantSelected() {
     console.log('🔧 ensureRestaurantSelected: Verificando seleção...');
+
+// ====== SISTEMA DE CATEGORIAS CUSTOMIZADAS ======
+
+/**
+ * Obtém categorias padrão do sistema
+ * @param {string} type - Tipo de categoria (financial, recurring, inventory, preparations, employeeRoles)
+ * @param {string} subtype - Subtipo para financial (income/expense)
+ * @returns {Array} Array de objetos com value e label
+ */
+function getDefaultCategories(type, subtype = null) {
+    const defaults = {
+        financial: {
+            income: [
+                { value: 'sales', label: 'Verkäufe' },
+                { value: 'delivery', label: 'Lieferungen' },
+                { value: 'catering', label: 'Catering' },
+                { value: 'other_income', label: 'Sonstige Einnahmen' }
+            ],
+            expense: [
+                { value: 'food_supplies', label: 'Lebensmittel' },
+                { value: 'rent', label: 'Miete' },
+                { value: 'utilities', label: 'Nebenkosten' },
+                { value: 'staff', label: 'Personal' },
+                { value: 'equipment', label: 'Ausrüstung' },
+                { value: 'marketing', label: 'Marketing' },
+                { value: 'maintenance', label: 'Wartung' },
+                { value: 'other_expense', label: 'Sonstige Ausgaben' }
+            ]
+        },
+        recurring: [
+            { value: 'rent', label: 'Miete' },
+            { value: 'utilities', label: 'Nebenkosten' },
+            { value: 'insurance', label: 'Versicherung' },
+            { value: 'loan', label: 'Kredite/Darlehen' },
+            { value: 'staff', label: 'Personal' },
+            { value: 'taxes', label: 'Steuern' },
+            { value: 'services', label: 'Dienstleistungen' },
+            { value: 'maintenance', label: 'Wartung' },
+            { value: 'subscriptions', label: 'Abonnements' },
+            { value: 'other', label: 'Sonstiges' }
+        ],
+        inventory: [
+            { value: 'vegetables', label: 'Gemüse' },
+            { value: 'fruits', label: 'Obst' },
+            { value: 'meat', label: 'Fleisch' },
+            { value: 'fish', label: 'Fisch' },
+            { value: 'dairy', label: 'Milchprodukte' },
+            { value: 'grains', label: 'Getreide/Reis' },
+            { value: 'spices', label: 'Gewürze' },
+            { value: 'oils', label: 'Öle/Fette' },
+            { value: 'beverages', label: 'Getränke' },
+            { value: 'frozen', label: 'Tiefkühlkost' },
+            { value: 'cleaning', label: 'Reinigung' },
+            { value: 'other', label: 'Sonstiges' }
+        ],
+        preparations: [
+            { value: 'Vorbereitung', label: 'Vorbereitung' },
+            { value: 'Kochen', label: 'Kochen' },
+            { value: 'Backen', label: 'Backen' },
+            { value: 'Reinigung', label: 'Reinigung' },
+            { value: 'Dekoration', label: 'Dekoration' },
+            { value: 'Andere', label: 'Andere' }
+        ],
+        employeeRoles: [
+            { value: 'Koch', label: 'Koch' },
+            { value: 'Sous-Chef', label: 'Sous-Chef' },
+            { value: 'Service', label: 'Service' },
+            { value: 'Kellner', label: 'Kellner' },
+            { value: 'Barkeeper', label: 'Barkeeper' },
+            { value: 'Reinigung', label: 'Reinigung' },
+            { value: 'Manager', label: 'Manager' },
+            { value: 'Aushilfe', label: 'Aushilfe' }
+        ]
+    };
+
+    if (type === 'financial' && subtype) {
+        return defaults.financial[subtype] || [];
+    }
+    return defaults[type] || [];
+}
+
+/**
+ * Adiciona categoria customizada
+ * @param {string} type - Tipo de categoria
+ * @param {string} value - Valor único da categoria
+ * @param {string} label - Label em alemão
+ * @param {string} subtype - Subtipo para financial (income/expense)
+ * @returns {boolean} True se adicionado com sucesso
+ */
+function addCustomCategory(type, value, label, subtype = null) {
+    const restaurantData = getCurrentRestaurantData();
+    if (!restaurantData || !restaurantData.customCategories) return false;
+
+    const categoryObj = { value, label, custom: true };
+
+    try {
+        if (type === 'financial' && subtype) {
+            if (!restaurantData.customCategories.financial[subtype]) {
+                restaurantData.customCategories.financial[subtype] = [];
+            }
+            
+            // Verificar se já existe
+            const exists = restaurantData.customCategories.financial[subtype].some(cat => cat.value === value);
+            if (exists) {
+                showNotification('Kategorie existiert bereits', 'warning');
+                return false;
+            }
+            
+            restaurantData.customCategories.financial[subtype].push(categoryObj);
+        } else {
+            if (!restaurantData.customCategories[type]) {
+                restaurantData.customCategories[type] = [];
+            }
+            
+            // Verificar se já existe
+            const exists = restaurantData.customCategories[type].some(cat => cat.value === value);
+            if (exists) {
+                showNotification('Kategorie existiert bereits', 'warning');
+                return false;
+            }
+            
+            restaurantData.customCategories[type].push(categoryObj);
+        }
+
+        saveDataToStorage();
+        showNotification('Kategorie erfolgreich hinzugefügt', 'success');
+        
+        // Emitir evento de mudança de dados
+        if (typeof eventBus !== 'undefined') {
+            eventBus.emit(EVENTS.DATA_CHANGED, {
+                type: 'category_added',
+                category: { type, value, label, subtype },
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Erro ao adicionar categoria:', error);
+        showNotification('Fehler beim Hinzufügen der Kategorie', 'error');
+        return false;
+    }
+}
+
+/**
+ * Remove categoria customizada
+ * @param {string} type - Tipo de categoria
+ * @param {string} value - Valor da categoria
+ * @param {string} subtype - Subtipo para financial
+ * @returns {boolean} True se removido com sucesso
+ */
+function removeCustomCategory(type, value, subtype = null) {
+    const restaurantData = getCurrentRestaurantData();
+    if (!restaurantData || !restaurantData.customCategories) return false;
+
+    try {
+        if (type === 'financial' && subtype) {
+            if (!restaurantData.customCategories.financial[subtype]) return false;
+            
+            const index = restaurantData.customCategories.financial[subtype].findIndex(cat => cat.value === value);
+            if (index > -1) {
+                restaurantData.customCategories.financial[subtype].splice(index, 1);
+            }
+        } else {
+            if (!restaurantData.customCategories[type]) return false;
+            
+            const index = restaurantData.customCategories[type].findIndex(cat => cat.value === value);
+            if (index > -1) {
+                restaurantData.customCategories[type].splice(index, 1);
+            }
+        }
+
+        saveDataToStorage();
+        showNotification('Kategorie erfolgreich entfernt', 'success');
+        
+        // Emitir evento de mudança de dados
+        if (typeof eventBus !== 'undefined') {
+            eventBus.emit(EVENTS.DATA_CHANGED, {
+                type: 'category_removed',
+                category: { type, value, subtype },
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Erro ao remover categoria:', error);
+        showNotification('Fehler beim Entfernen der Kategorie', 'error');
+        return false;
+    }
+}
+
+/**
+ * Obtém todas as categorias (padrão + customizadas)
+ * @param {string} type - Tipo de categoria
+ * @param {string} subtype - Subtipo para financial
+ * @returns {Array} Array combinado de categorias
+ */
+function getAllCategories(type, subtype = null) {
+    const defaultCategories = getDefaultCategories(type, subtype);
+    const restaurantData = getCurrentRestaurantData();
+    
+    if (!restaurantData || !restaurantData.customCategories) {
+        return defaultCategories;
+    }
+
+    let customCategories = [];
+    
+    if (type === 'financial' && subtype) {
+        customCategories = restaurantData.customCategories.financial[subtype] || [];
+    } else {
+        customCategories = restaurantData.customCategories[type] || [];
+    }
+
+    return [...defaultCategories, ...customCategories];
+}
+
+/**
+ * Obtém apenas categorias customizadas
+ * @param {string} type - Tipo de categoria
+ * @param {string} subtype - Subtipo para financial
+ * @returns {Array} Array de categorias customizadas
+ */
+function getCustomCategories(type, subtype = null) {
+    const restaurantData = getCurrentRestaurantData();
+    
+    if (!restaurantData || !restaurantData.customCategories) {
+        return [];
+    }
+
+    if (type === 'financial' && subtype) {
+        return restaurantData.customCategories.financial[subtype] || [];
+    }
+    
+    return restaurantData.customCategories[type] || [];
+}
+
+/**
+ * Obtém label da categoria (padrão ou customizada)
+ * @param {string} type - Tipo de categoria
+ * @param {string} value - Valor da categoria
+ * @param {string} subtype - Subtipo para financial
+ * @returns {string} Label da categoria ou o próprio value se não encontrado
+ */
+function getCategoryLabel(type, value, subtype = null) {
+    const allCategories = getAllCategories(type, subtype);
+    const category = allCategories.find(cat => cat.value === value);
+    return category ? category.label : value;
+}
     
     // Se já tem currentRestaurant válido, retorna true
     if (currentRestaurant && appData && appData[currentRestaurant]) {

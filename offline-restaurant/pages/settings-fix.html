@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einstellungen - Restaurant-Verwaltung</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header com navegação -->
+        <header class="header">
+            <h1>⚙️ Einstellungen</h1>
+            <div class="nav-buttons">
+                <button class="btn" onclick="navigateTo('index.html')">🏠 Startseite</button>
+                <button class="btn btn-success" onclick="quickSave()">💾 Speichern</button>
+            </div>
+        </header>
+
+        <!-- Sistema de Categorias -->
+        <div class="card">
+            <h2>🏷️ Kategorien verwalten</h2>
+            <p style="color: #7f8c8d; margin-bottom: 20px;">
+                Hier können Sie benutzerdefinierte Kategorien für alle Module erstellen und verwalten. Diese Kategorien werden in Formularen und Berichten verwendet.
+            </p>
+
+            <!-- Finanz-Kategorien -->
+            <div style="padding: 20px; border: 2px solid #28a745; margin: 20px;">
+                <h3>💰 Finanz-Kategorien</h3>
+                
+                <!-- Einnahmen -->
+                <div style="margin-bottom: 30px;">
+                    <h4 style="color: #27ae60; margin-bottom: 15px;">📈 Einnahme-Kategorien</h4>
+                    <div style="display: flex; gap: 10px; align-items: end; margin-bottom: 15px;">
+                        <input type="text" id="newIncomeCategory" placeholder="z.B. Catering-Privat" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <button onclick="addIncomeCategory()" style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            + Hinzufügen
+                        </button>
+                    </div>
+                    <div id="income-categories-list" style="background: #f8f9fa; padding: 10px; border-radius: 4px; min-height: 50px;">
+                        Lade Kategorien...
+                    </div>
+                </div>
+
+                <!-- Ausgaben -->
+                <div>
+                    <h4 style="color: #e74c3c; margin-bottom: 15px;">📉 Ausgabe-Kategorien</h4>
+                    <div style="display: flex; gap: 10px; align-items: end; margin-bottom: 15px;">
+                        <input type="text" id="newExpenseCategory" placeholder="z.B. Spezialzutaten" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <button onclick="addExpenseCategory()" style="padding: 8px 15px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            + Hinzufügen
+                        </button>
+                    </div>
+                    <div id="expense-categories-list" style="background: #f8f9fa; padding: 10px; border-radius: 4px; min-height: 50px;">
+                        Lade Kategorien...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug Info -->
+        <div id="debugInfo" style="background: #f0f0f0; padding: 10px; margin: 20px; border: 1px solid #ccc; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto;">
+            <strong>Debug Info:</strong><br>
+        </div>
+    </div>
+
+    <script src="../js/eventBus.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        // Debug function
+        function debugLog(message) {
+            console.log('[DEBUG] ' + message);
+            const debugDiv = document.getElementById('debugInfo');
+            debugDiv.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '<br>';
+            debugDiv.scrollTop = debugDiv.scrollHeight;
+        }
+
+        // Dados locais para as categorias (fallback se main.js falhar)
+        let localCategories = {
+            financial: {
+                income: [],
+                expense: []
+            }
+        };
+
+        // Carregar do localStorage
+        function loadLocalCategories() {
+            const stored = localStorage.getItem('restaurant_custom_categories');
+            if (stored) {
+                try {
+                    localCategories = JSON.parse(stored);
+                } catch(e) {
+                    debugLog('Erro ao carregar categorias: ' + e.message);
+                }
+            }
+        }
+
+        // Salvar no localStorage
+        function saveLocalCategories() {
+            localStorage.setItem('restaurant_custom_categories', JSON.stringify(localCategories));
+            debugLog('Categorias salvas localmente');
+        }
+
+        // Adicionar categoria de income
+        function addIncomeCategory() {
+            debugLog('addIncomeCategory chamada');
+            
+            const input = document.getElementById('newIncomeCategory');
+            const label = input.value.trim();
+            
+            if (!label) {
+                alert('Bitte geben Sie einen Kategorienamen ein');
+                return;
+            }
+
+            // Verificar se já existe
+            const exists = localCategories.financial.income.some(cat => cat.label === label);
+            if (exists) {
+                alert('Kategorie existiert bereits');
+                return;
+            }
+
+            // Adicionar
+            const value = label.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            localCategories.financial.income.push({ value, label, custom: true });
+            
+            // Salvar
+            saveLocalCategories();
+            
+            // Limpar input
+            input.value = '';
+            
+            // Atualizar lista
+            loadIncomeCategories();
+            
+            // Tentar integrar com o sistema principal se disponível
+            try {
+                if (typeof addCustomCategory !== 'undefined') {
+                    addCustomCategory('financial', value, label, 'income');
+                    debugLog('Integrado com sistema principal');
+                }
+            } catch(e) {
+                debugLog('Sistema principal não disponível: ' + e.message);
+            }
+            
+            alert('Kategorie "' + label + '" erfolgreich hinzugefügt!');
+        }
+
+        // Adicionar categoria de expense
+        function addExpenseCategory() {
+            debugLog('addExpenseCategory chamada');
+            
+            const input = document.getElementById('newExpenseCategory');
+            const label = input.value.trim();
+            
+            if (!label) {
+                alert('Bitte geben Sie einen Kategorienamen ein');
+                return;
+            }
+
+            // Verificar se já existe
+            const exists = localCategories.financial.expense.some(cat => cat.label === label);
+            if (exists) {
+                alert('Kategorie existiert bereits');
+                return;
+            }
+
+            // Adicionar
+            const value = label.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            localCategories.financial.expense.push({ value, label, custom: true });
+            
+            // Salvar
+            saveLocalCategories();
+            
+            // Limpar input
+            input.value = '';
+            
+            // Atualizar lista
+            loadExpenseCategories();
+            
+            // Tentar integrar com o sistema principal se disponível
+            try {
+                if (typeof addCustomCategory !== 'undefined') {
+                    addCustomCategory('financial', value, label, 'expense');
+                    debugLog('Integrado com sistema principal');
+                }
+            } catch(e) {
+                debugLog('Sistema principal não disponível: ' + e.message);
+            }
+            
+            alert('Kategorie "' + label + '" erfolgreich hinzugefügt!');
+        }
+
+        // Carregar categorias de income
+        function loadIncomeCategories() {
+            const container = document.getElementById('income-categories-list');
+            const categories = localCategories.financial.income;
+            
+            if (categories.length === 0) {
+                container.innerHTML = '<em style="color: #7f8c8d;">Keine benutzerdefinierten Kategorien vorhanden</em>';
+                return;
+            }
+
+            container.innerHTML = categories.map(cat => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: white; margin: 5px 0; border-radius: 4px; border: 1px solid #e0e0e0;">
+                    <span>${cat.label}</span>
+                    <button onclick="removeIncomeCategory('${cat.value}')" style="padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">
+                        🗑️ Löschen
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Carregar categorias de expense
+        function loadExpenseCategories() {
+            const container = document.getElementById('expense-categories-list');
+            const categories = localCategories.financial.expense;
+            
+            if (categories.length === 0) {
+                container.innerHTML = '<em style="color: #7f8c8d;">Keine benutzerdefinierten Kategorien vorhanden</em>';
+                return;
+            }
+
+            container.innerHTML = categories.map(cat => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: white; margin: 5px 0; border-radius: 4px; border: 1px solid #e0e0e0;">
+                    <span>${cat.label}</span>
+                    <button onclick="removeExpenseCategory('${cat.value}')" style="padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">
+                        🗑️ Löschen
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Remover categoria income
+        function removeIncomeCategory(value) {
+            if (confirm('Möchten Sie diese Kategorie wirklich löschen?')) {
+                localCategories.financial.income = localCategories.financial.income.filter(cat => cat.value !== value);
+                saveLocalCategories();
+                loadIncomeCategories();
+                alert('Kategorie erfolgreich gelöscht');
+            }
+        }
+
+        // Remover categoria expense
+        function removeExpenseCategory(value) {
+            if (confirm('Möchten Sie diese Kategorie wirklich löschen?')) {
+                localCategories.financial.expense = localCategories.financial.expense.filter(cat => cat.value !== value);
+                saveLocalCategories();
+                loadExpenseCategories();
+                alert('Kategorie erfolgreich gelöscht');
+            }
+        }
+
+        // Navegação
+        function navigateTo(page) {
+            window.location.href = page.startsWith('http') ? page : '../' + page;
+        }
+
+        // Save rápido
+        function quickSave() {
+            saveLocalCategories();
+            alert('Einstellungen gespeichert!');
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            debugLog('🚀 Página carregada');
+            
+            // Carregar dados
+            loadLocalCategories();
+            
+            // Carregar listas
+            loadIncomeCategories();
+            loadExpenseCategories();
+            
+            // Verificar sistema principal
+            setTimeout(function() {
+                debugLog('Sistema principal disponível: ' + (typeof addCustomCategory !== 'undefined'));
+                debugLog('getCurrentRestaurant disponível: ' + (typeof getCurrentRestaurant !== 'undefined'));
+                
+                if (typeof loadDataFromStorage !== 'undefined') {
+                    try {
+                        loadDataFromStorage();
+                        debugLog('✅ loadDataFromStorage executado');
+                    } catch(e) {
+                        debugLog('❌ Erro loadDataFromStorage: ' + e.message);
+                    }
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html> 

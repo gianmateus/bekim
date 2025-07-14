@@ -79,16 +79,7 @@
                         <label for="category">Kategorie:</label>
                         <select id="category" required>
                             <option value="">Bitte auswählen...</option>
-                            <option value="rent">Miete</option>
-                            <option value="utilities">Nebenkosten</option>
-                            <option value="insurance">Versicherung</option>
-                            <option value="loan">Kredite/Darlehen</option>
-                            <option value="staff">Personal</option>
-                            <option value="taxes">Steuern</option>
-                            <option value="services">Dienstleistungen</option>
-                            <option value="maintenance">Wartung</option>
-                            <option value="subscriptions">Abonnements</option>
-                            <option value="other">Sonstiges</option>
+                            <!-- Dynamisch befüllt mit Kategorien für wiederkehrende Zahlungen -->
                         </select>
                     </div>
                     
@@ -162,16 +153,7 @@
                 
                 <select id="filterCategory" style="padding: 10px; border-radius: 5px; border: 1px solid #bdc3c7;">
                     <option value="">Alle Kategorien</option>
-                    <option value="rent">Miete</option>
-                    <option value="utilities">Nebenkosten</option>
-                    <option value="insurance">Versicherung</option>
-                    <option value="loan">Kredite/Darlehen</option>
-                    <option value="staff">Personal</option>
-                    <option value="taxes">Steuern</option>
-                    <option value="services">Dienstleistungen</option>
-                    <option value="maintenance">Wartung</option>
-                    <option value="subscriptions">Abonnements</option>
-                    <option value="other">Sonstiges</option>
+                    <!-- Dynamisch befüllt mit verfügbaren Kategorien -->
                 </select>
                 
                 <select id="filterStatus" style="padding: 10px; border-radius: 5px; border: 1px solid #bdc3c7;">
@@ -408,18 +390,7 @@
                 return;
             }
 
-            const categoryLabels = {
-                'rent': 'Miete',
-                'utilities': 'Nebenkosten',
-                'insurance': 'Versicherung',
-                'loan': 'Kredite/Darlehen',
-                'staff': 'Personal',
-                'taxes': 'Steuern',
-                'services': 'Dienstleistungen',
-                'maintenance': 'Wartung',
-                'subscriptions': 'Abonnements',
-                'other': 'Sonstiges'
-            };
+            // Usar função dinâmica para categorias
 
             const frequencyLabels = {
                 'weekly': 'Wöchentlich',
@@ -450,7 +421,7 @@
                         <div class="item" style="border-left-color: ${statusColor};">
                             <div class="item-info">
                                 <h4>${payment.description}</h4>
-                                <p><strong>Kategorie:</strong> ${categoryLabels[payment.category] || payment.category}</p>
+                                <p><strong>Kategorie:</strong> ${getRecurringCategoryLabel(payment.category)}</p>
                                 <p><strong>Häufigkeit:</strong> ${frequencyLabels[payment.frequency]}</p>
                                 <p><strong>Nächste Fälligkeit:</strong> ${formatDate(payment.nextDue)}</p>
                                 <p><strong>Status:</strong> <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></p>
@@ -686,6 +657,152 @@
                 monthSelect.value = currentRecurringDate.getMonth();
                 yearSelect.value = currentRecurringDate.getFullYear();
             }
+        }
+
+        // ====== CATEGORIAS CUSTOMIZADAS PARA WIEDERKEHRENDE ZAHLUNGEN ======
+
+        /**
+         * Popula select de categoria para pagamentos recorrentes
+         */
+        function populateRecurringCategorySelect() {
+            const categorySelect = document.getElementById('category');
+            if (!categorySelect) return;
+
+            // Tentar usar sistema principal primeiro
+            let categories = [];
+            if (typeof getAllCategories !== 'undefined') {
+                try {
+                    categories = getAllCategories('recurring');
+                } catch(error) {
+                    console.log('[FALLBACK] Erro getAllCategories recurring, usando fallback:', error.message);
+                }
+            }
+            
+            // Se não funcionou, usar fallback
+            if (categories.length === 0) {
+                categories = getFallbackRecurringCategories();
+            }
+            
+            categorySelect.innerHTML = '<option value="">Bitte auswählen...</option>';
+            
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.value;
+                option.textContent = category.label;
+                categorySelect.appendChild(option);
+            });
+        }
+
+        /**
+         * Popula filtro de categorias
+         */
+        function populateRecurringFilterCategories() {
+            const filterSelect = document.getElementById('filterCategory');
+            if (!filterSelect) return;
+
+            // Tentar usar sistema principal primeiro
+            let categories = [];
+            if (typeof getAllCategories !== 'undefined') {
+                try {
+                    categories = getAllCategories('recurring');
+                } catch(error) {
+                    console.log('[FALLBACK] Erro getAllCategories filter recurring, usando fallback:', error.message);
+                }
+            }
+            
+            // Se não funcionou, usar fallback
+            if (categories.length === 0) {
+                categories = getFallbackRecurringCategories();
+            }
+            
+            filterSelect.innerHTML = '<option value="">Alle Kategorien</option>';
+            
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.value;
+                option.textContent = category.label;
+                filterSelect.appendChild(option);
+            });
+        }
+
+        /**
+         * Obtém label da categoria para exibição
+         */
+        function getRecurringCategoryLabel(value) {
+            // Tentar usar sistema principal primeiro
+            if (typeof getCategoryLabel !== 'undefined') {
+                try {
+                    return getCategoryLabel('recurring', value);
+                } catch(error) {
+                    console.log('[FALLBACK] Erro getCategoryLabel recurring, usando fallback:', error.message);
+                }
+            }
+            
+            // Fallback
+            return getFallbackRecurringCategoryLabel(value);
+        }
+
+        /**
+         * FALLBACK: Obtém categorias de pagamentos recorrentes quando main.js não funciona
+         */
+        function getFallbackRecurringCategories() {
+            // Categorias padrão para pagamentos recorrentes
+            const defaultCategories = [
+                { value: 'rent', label: 'Miete' },
+                { value: 'utilities', label: 'Nebenkosten' },
+                { value: 'insurance', label: 'Versicherung' },
+                { value: 'software', label: 'Software/Lizenzen' },
+                { value: 'maintenance', label: 'Wartung/Service' },
+                { value: 'subscription', label: 'Abonnements' },
+                { value: 'loan', label: 'Kredite/Darlehen' },
+                { value: 'other', label: 'Sonstiges' }
+            ];
+            
+            // Categorias customizadas do settings
+            let customCategories = [];
+            try {
+                const stored = localStorage.getItem('custom_categories_fallback');
+                if (stored) {
+                    const categories = JSON.parse(stored);
+                    if (categories.recurring) {
+                        customCategories = categories.recurring;
+                    }
+                }
+            } catch(e) {
+                console.log('[FALLBACK] Erro ao carregar categorias recurring customizadas:', e.message);
+            }
+            
+            // Combinar padrão + customizadas
+            return [...defaultCategories, ...customCategories];
+        }
+
+        /**
+         * FALLBACK: Obtém label da categoria quando main.js não funciona
+         */
+        function getFallbackRecurringCategoryLabel(value) {
+            const categories = getFallbackRecurringCategories();
+            const category = categories.find(cat => cat.value === value);
+            return category ? category.label : value;
+        }
+
+        // Inicializar categorias quando a página carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            // Popular selects de categoria
+            setTimeout(() => {
+                populateRecurringCategorySelect();
+                populateRecurringFilterCategories();
+            }, 100);
+        });
+
+        // EventBus listener para atualizações de categoria
+        if (typeof eventBus !== 'undefined') {
+            eventBus.on(EVENTS.DATA_CHANGED, (data) => {
+                if (data.type === 'category_added' || data.type === 'category_removed') {
+                    populateRecurringCategorySelect();
+                    populateRecurringFilterCategories();
+                    displayRecurringPayments(); // Atualizar exibição
+                }
+            });
         }
 
         // Inicializar navegação de mês quando a página carregar

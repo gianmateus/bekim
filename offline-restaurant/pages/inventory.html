@@ -61,18 +61,7 @@
                         <label for="category">Kategorie:</label>
                         <select id="itemCategory" required>
                             <option value="">Bitte auswählen...</option>
-                            <option value="vegetables">Gemüse</option>
-                            <option value="fruits">Obst</option>
-                            <option value="meat">Fleisch</option>
-                            <option value="fish">Fisch</option>
-                            <option value="dairy">Milchprodukte</option>
-                            <option value="grains">Getreide/Reis</option>
-                            <option value="spices">Gewürze</option>
-                            <option value="oils">Öle/Fette</option>
-                            <option value="beverages">Getränke</option>
-                            <option value="frozen">Tiefkühlkost</option>
-                            <option value="cleaning">Reinigung</option>
-                            <option value="other">Sonstiges</option>
+                            <!-- Dynamisch befüllt mit Kategorien für Inventar -->
                         </select>
                     </div>
                     
@@ -122,18 +111,7 @@
             <div style="margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
                 <select id="filterCategory" style="padding: 10px; border-radius: 5px; border: 1px solid #bdc3c7;">
                     <option value="">Alle Kategorien</option>
-                    <option value="vegetables">Gemüse</option>
-                    <option value="fruits">Obst</option>
-                    <option value="meat">Fleisch</option>
-                    <option value="fish">Fisch</option>
-                    <option value="dairy">Milchprodukte</option>
-                    <option value="grains">Getreide/Reis</option>
-                    <option value="spices">Gewürze</option>
-                    <option value="oils">Öle/Fette</option>
-                    <option value="beverages">Getränke</option>
-                    <option value="frozen">Tiefkühlkost</option>
-                    <option value="cleaning">Reinigung</option>
-                    <option value="other">Sonstiges</option>
+                    <!-- Dynamisch befüllt mit verfügbaren Kategorien -->
                 </select>
                 
                 <select id="filterStock" style="padding: 10px; border-radius: 5px; border: 1px solid #bdc3c7;">
@@ -304,19 +282,16 @@
                 return;
             }
 
-            const categoryLabels = {
-                'vegetables': 'Gemüse',
-                'fruits': 'Obst',
-                'meat': 'Fleisch',
-                'fish': 'Fisch',
-                'dairy': 'Milchprodukte',
-                'grains': 'Getreide/Reis',
-                'spices': 'Gewürze',
-                'oils': 'Öle/Fette',
-                'beverages': 'Getränke',
-                'frozen': 'Tiefkühlkost',
-                'cleaning': 'Reinigung',
-                'other': 'Sonstiges'
+            // Usar função de fallback para obter labels das categorias
+            const getCategoryLabelSafe = (value) => {
+                if (typeof getCategoryLabel !== 'undefined') {
+                    try {
+                        return getCategoryLabel('inventory', value);
+                    } catch(error) {
+                        console.log('[FALLBACK] Erro getCategoryLabel inventory, usando fallback:', error.message);
+                    }
+                }
+                return getFallbackInventoryCategoryLabel(value);
             };
 
             container.innerHTML = inventory
@@ -329,7 +304,7 @@
                         <div class="item" style="border-left-color: ${stockColor};">
                             <div class="item-info">
                                 <h4>${item.name}</h4>
-                                <p>${categoryLabels[item.category] || item.category}</p>
+                                <p>${getCategoryLabelSafe(item.category)}</p>
                                 <p><strong>Bestand:</strong> ${item.currentStock} ${item.unit} | <strong>Minimum:</strong> ${item.minStock} ${item.unit}</p>
                                 <p><strong>Status:</strong> <span style="color: ${stockColor}; font-weight: bold;">${stockText}</span></p>
                                 ${item.unitPrice > 0 ? `<p><strong>Wert:</strong> ${formatCurrency(item.currentStock * item.unitPrice)}</p>` : ''}
@@ -443,24 +418,21 @@
                 return;
             }
 
-            const categoryLabels = {
-                'vegetables': 'Gemüse',
-                'fruits': 'Obst',
-                'meat': 'Fleisch',
-                'fish': 'Fisch',
-                'dairy': 'Milchprodukte',
-                'grains': 'Getreide/Reis',
-                'spices': 'Gewürze',
-                'oils': 'Öle/Fette',
-                'beverages': 'Getränke',
-                'frozen': 'Tiefkühlkost',
-                'cleaning': 'Reinigung',
-                'other': 'Sonstiges'
+            // Usar função de fallback para obter labels das categorias
+            const getCategoryLabelSafe = (value) => {
+                if (typeof getCategoryLabel !== 'undefined') {
+                    try {
+                        return getCategoryLabel('inventory', value);
+                    } catch(error) {
+                        console.log('[FALLBACK] Erro getCategoryLabel inventory shopping, usando fallback:', error.message);
+                    }
+                }
+                return getFallbackInventoryCategoryLabel(value);
             };
 
             // Agrupar por categoria
             const groupedItems = itemsToRestock.reduce((groups, item) => {
-                const category = categoryLabels[item.category] || item.category;
+                const category = getCategoryLabelSafe(item.category);
                 if (!groups[category]) {
                     groups[category] = [];
                 }
@@ -508,6 +480,140 @@
             document.body.removeChild(link);
             
             showNotification('Einkaufsliste erfolgreich generiert', 'success');
+        }
+
+        // ====== CATEGORIAS CUSTOMIZADAS PARA INVENTÁRIO ======
+
+        /**
+         * Popula select de categoria para itens de inventário
+         */
+        function populateInventoryCategorySelect() {
+            const categorySelect = document.getElementById('itemCategory');
+            if (!categorySelect) return;
+
+            // Tentar usar sistema principal primeiro
+            let categories = [];
+            if (typeof getAllCategories !== 'undefined') {
+                try {
+                    categories = getAllCategories('inventory');
+                } catch(error) {
+                    console.log('[FALLBACK] Erro getAllCategories inventory, usando fallback:', error.message);
+                }
+            }
+            
+            // Se não funcionou, usar fallback
+            if (categories.length === 0) {
+                categories = getFallbackInventoryCategories();
+            }
+            
+            categorySelect.innerHTML = '<option value="">Bitte auswählen...</option>';
+            
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.value;
+                option.textContent = category.label;
+                categorySelect.appendChild(option);
+            });
+        }
+
+        /**
+         * Popula filtro de categorias de inventário
+         */
+        function populateInventoryFilterCategories() {
+            const filterSelect = document.getElementById('filterCategory');
+            if (!filterSelect) return;
+
+            // Tentar usar sistema principal primeiro
+            let categories = [];
+            if (typeof getAllCategories !== 'undefined') {
+                try {
+                    categories = getAllCategories('inventory');
+                } catch(error) {
+                    console.log('[FALLBACK] Erro getAllCategories filter inventory, usando fallback:', error.message);
+                }
+            }
+            
+            // Se não funcionou, usar fallback
+            if (categories.length === 0) {
+                categories = getFallbackInventoryCategories();
+            }
+            
+            filterSelect.innerHTML = '<option value="">Alle Kategorien</option>';
+            
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.value;
+                option.textContent = category.label;
+                filterSelect.appendChild(option);
+            });
+        }
+
+        /**
+         * FALLBACK: Obtém categorias de inventário quando main.js não funciona
+         */
+        function getFallbackInventoryCategories() {
+            // Categorias padrão para inventário
+            const defaultCategories = [
+                { value: 'vegetables', label: 'Gemüse' },
+                { value: 'fruits', label: 'Obst' },
+                { value: 'meat', label: 'Fleisch' },
+                { value: 'fish', label: 'Fisch' },
+                { value: 'dairy', label: 'Milchprodukte' },
+                { value: 'grains', label: 'Getreide/Reis' },
+                { value: 'spices', label: 'Gewürze' },
+                { value: 'oils', label: 'Öle/Fette' },
+                { value: 'beverages', label: 'Getränke' },
+                { value: 'frozen', label: 'Tiefkühlkost' },
+                { value: 'cleaning', label: 'Reinigung' },
+                { value: 'other', label: 'Sonstiges' }
+            ];
+            
+            // Categorias customizadas do settings
+            let customCategories = [];
+            try {
+                const stored = localStorage.getItem('custom_categories_fallback');
+                if (stored) {
+                    const categories = JSON.parse(stored);
+                    if (categories.inventory) {
+                        customCategories = categories.inventory;
+                    }
+                }
+            } catch(e) {
+                console.log('[FALLBACK] Erro ao carregar categorias inventory customizadas:', e.message);
+            }
+            
+            // Combinar padrão + customizadas
+            return [...defaultCategories, ...customCategories];
+        }
+
+        /**
+         * FALLBACK: Obtém label da categoria quando main.js não funciona
+         */
+        function getFallbackInventoryCategoryLabel(value) {
+            const categories = getFallbackInventoryCategories();
+            const category = categories.find(cat => cat.value === value);
+            return category ? category.label : value;
+        }
+
+        // Inicializar categorias quando a página carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            // Popular selects de categoria
+            setTimeout(() => {
+                console.log('[DEBUG] Inicializando categorias inventory');
+                populateInventoryCategorySelect();
+                populateInventoryFilterCategories();
+            }, 200);
+        });
+
+        // EventBus listener para atualizações de categoria
+        if (typeof eventBus !== 'undefined') {
+            eventBus.on(EVENTS.DATA_CHANGED, (data) => {
+                if (data.type === 'category_added' || data.type === 'category_removed') {
+                    populateInventoryCategorySelect();
+                    populateInventoryFilterCategories();
+                    displayInventory(); // Atualizar exibição
+                }
+            });
         }
     </script>
 </body>
